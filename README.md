@@ -187,3 +187,9 @@ npm run export:web
 ```
 
 For deployment steps and limitations, see [WEB_DEPLOYMENT.md](WEB_DEPLOYMENT.md). A working hosted web demo has **not yet been verified**. The civic assistant currently uses keyword-based responses, not a hosted generative AI model.
+
+## 🌐 Live Web Preview
+
+**[Open the Nagrik web app](https://nagrik-eight.vercel.app/login)** · [Deployment instructions](WEB_DEPLOYMENT.md)
+
+The public web build is deployed through Vercel. Authentication and browser-specific mobile features still require end-to-end testing; availability of the login screen alone does not prove every feature works.
