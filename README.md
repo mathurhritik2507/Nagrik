@@ -171,3 +171,19 @@ The long-term vision is to create a scalable civic ecosystem that encourages mea
 ## ⭐ Status
 
 Currently in active development and beta testing.
+
+---
+
+## 🌐 Web Deployment (Expo + Vercel)
+
+Nagrik now includes a browser-specific Firebase configuration, Expo web scripts, and Vercel hosting configuration, while preserving the native Android/iOS source code.
+
+To test locally:
+
+```bash
+npm ci
+npm run web
+npm run export:web
+```
+
+For deployment steps and limitations, see [WEB_DEPLOYMENT.md](WEB_DEPLOYMENT.md). A working hosted web demo has **not yet been verified**. The civic assistant currently uses keyword-based responses, not a hosted generative AI model.
