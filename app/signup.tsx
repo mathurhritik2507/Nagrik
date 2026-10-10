@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
     ActivityIndicator,
-    Alert,
     Text,
     TextInput,
     TouchableOpacity,
@@ -27,15 +26,17 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const signup = async () => {
+    setErrorMessage("");
     if (!name.trim() || !city.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Missing info", "Please fill all fields.");
+      setErrorMessage("Please fill all fields.");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Weak password", "Password must be at least 6 characters.");
+      setErrorMessage("Password must be at least 6 characters.");
       return;
     }
 
@@ -54,7 +55,18 @@ export default function SignupScreen() {
 
       router.replace("/");
     } catch (error) {
-      Alert.alert("Signup failed", error.message);
+      const code = error?.code || "unknown";
+      const errors = {
+        "auth/email-already-in-use": "This email is already registered. Please log in.",
+        "auth/invalid-email": "Please enter a valid email address.",
+        "auth/invalid-credential": "The email or password is incorrect.",
+        "auth/wrong-password": "The email or password is incorrect.",
+        "auth/weak-password": "Please use a stronger password.",
+        "auth/operation-not-allowed": "Email/password authentication must be enabled in Firebase Console.",
+        "auth/unauthorized-domain": "This site must be added to Firebase Authorized Domains.",
+        "auth/network-request-failed": "Could not connect to Firebase. Please try again.",
+      };
+      setErrorMessage(errors[code] || `Authentication failed (${code}). Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -75,6 +87,11 @@ export default function SignupScreen() {
       </Text>
 
       <View style={{ backgroundColor: colors.card, padding: 22, borderRadius: 24, marginTop: 30 }}>
+        {errorMessage ? (
+          <View accessibilityRole="alert" style={{ padding: 14, marginBottom: 12, backgroundColor: "#FEE2E2", borderRadius: 12 }}>
+            <Text style={{ color: "#991B1B", fontWeight: "700" }}>{errorMessage}</Text>
+          </View>
+        ) : null}
         <TextInput
           value={name}
           onChangeText={setName}
