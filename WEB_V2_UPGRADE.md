@@ -8,14 +8,18 @@ This feature branch adds a **web-specific** product experience while leaving the
 - Working action and issue submit forms with validation, visible success/error messages, records, and optional browser-photo thumbnails.
 - Challenge selection, photo-based proof submissions labeled **unverified**.
 - Profile edit, logout, recent activity, personal KPI summaries, and category analytics.
-- Working rule-based civic guide with quick questions.
+- Civic AI chat with authenticated server-side requests; requires a server-side AI API key and abuse safeguards before public use.
+- Password reset through Firebase for both browser and Android.
+- Ten civic missions and a once-per-week digital reward crate after three distinct unverified proofs.
 
 ## IMPORTANT: What is not implemented yet
 - These records are **local to this browser**. Clearing browser data or switching devices loses access to them. Firebase is used for sign-in, **not** for cloud storage of these new records.
 - Records are NOT shared publicly, verified, or forwarded to municipality or emergency services.
-- Challenge proofs are saved as unverified and do not automatically award verified rewards.
-- No real map coordinates, actual incident statistics, municipal integrations, or hosted LLM.
+- Challenge proofs remain unverified. Weekly crate awards are virtual collectibles, not verified achievements, cash or redeemable vouchers.
+- No verified map coordinates, actual incident statistics, or municipal integrations. Live AI replies require the server-side API key to be configured.
 - Prior native AsyncStorage records are not imported into the new web-only store. The old native code is not changed.
+
+See [WEB_V2_REWARDS_AI.md](WEB_V2_REWARDS_AI.md) for the detailed AI configuration and weekly reward criteria.
 
 ## QA checklist before merging
 - [ ] Web export builds: `npm ci && npm run export:web`
