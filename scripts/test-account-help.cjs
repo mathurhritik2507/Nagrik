@@ -4,14 +4,14 @@ const vm=require("node:vm");
 const ts=require("typescript");
 const source=fs.readFileSync("lib/useAccountHelp.ts","utf8");
 const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
-const exports={};
-vm.runInNewContext(js,{exports,Error,require(name){
+const sandboxExports={};
+vm.runInNewContext(js,{exports:sandboxExports,Error,require(name){
  if(name==="react")return {};
  if(name==="firebase/auth")return {};
  if(name==="../firebaseConfig")return {auth:{currentUser:null}};
  throw Error("Unexpected import "+name);
 }});
-const explain=exports.explainAccountError;
+const explain=sandboxExports.explainAccountError;
 assert.match(explain({code:"auth/too-many-requests"}),/temporarily limiting/);
 assert.match(explain({code:"auth/unauthorized-domain"}),/authorized domains/);
 assert.match(explain({code:"auth/invalid-credential"}),/incorrect/);
