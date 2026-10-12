@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { auth } from "../../firebaseConfig";
 import {
     ActivityIndicator,
     Keyboard,
@@ -33,62 +34,40 @@ export default function AssistantScreen() {
     },
   ]);
 
-  const getAIReply = (input) => {
-    const text = input.toLowerCase();
-
-    if (text.includes("score") || text.includes("xp")) {
-      return "To improve your Civic Score, complete one challenge, upload one civic action with a clear photo, and report one real issue nearby. This gives you XP from multiple areas and improves your impact faster.";
+  const sendMessage = async () => {
+    const question=message.trim();
+    if(!question || typing)return;
+    if(question.length>600){
+      setMessages(prev=>[...prev,{role:"ai",text:"Keep your question within 600 characters."}]);
+      return;
     }
-
-    if (text.includes("report") || text.includes("issue") || text.includes("garbage") || text.includes("pothole")) {
-      return "You should report the issue with location, short description, and a clear photo. Example: 'Garbage dump near FC Road bus stop causing smell and traffic.' This makes the report useful for review.";
+    const account=auth.currentUser;
+    if(!account){
+      setMessages(prev=>[...prev,{role:"ai",text:"Please sign in again to use Nagrik Civic AI."}]);
+      return;
     }
-
-    if (text.includes("today") || text.includes("action")) {
-      return "Today’s best civic action: choose one small visible task — clean litter near your building, help someone follow traffic rules, water a public plant, or report one unsafe area.";
-    }
-
-    if (text.includes("learn") || text.includes("civic")) {
-      return "Civic sense means respecting shared public spaces. Start with simple habits: don’t litter, follow signals, avoid unnecessary honking, save water, and report public issues responsibly.";
-    }
-
-    if (text.includes("leaderboard") || text.includes("rank")) {
-      return "To climb the leaderboard, focus on consistency. Upload civic actions, complete daily challenges, and maintain your streak. Small daily actions matter more than one big action.";
-    }
-
-    if (text.includes("reward") || text.includes("badge")) {
-      return "Rewards and badges are unlocked through XP. Keep uploading genuine civic actions and completing challenges. Future versions can connect these rewards with local brand partners.";
-    }
-
-    if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
-      return "Hello! 👋 I can help you decide what civic action to take, how to report an issue, or how to grow your Nagrik profile.";
-    }
-
-    return "Good question. My suggestion: take one small real civic action, document it clearly, and stay consistent. Nagrik is about building better public habits through daily action.";
-  };
-
-  const sendMessage = () => {
-    if (!message.trim()) return;
-
-    const userMessage = {
-      role: "user",
-      text: message.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const history=messages.slice(1).slice(-6).map(item=>({
+      role:item.role==="user"?"user":"assistant",
+      content:item.text
+    }));
+    setMessages(prev=>[...prev,{role:"user",text:question}]);
     setMessage("");
     setTyping(true);
     Keyboard.dismiss();
-
-    setTimeout(() => {
-      const aiReply = {
-        role: "ai",
-        text: getAIReply(userMessage.text),
-      };
-
-      setMessages((prev) => [...prev, aiReply]);
-      setTyping(false);
-    }, 900);
+    try{
+      const token=await account.getIdToken();
+      const endpoint=(process.env.EXPO_PUBLIC_NAGRIK_API_BASE||"https://nagrik-eight.vercel.app").replace(/\\/$/,"")+"/api/civic-assistant";
+      const response=await fetch(endpoint,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+        body:JSON.stringify({message:question,history})
+      });
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||"AI is unavailable right now.");
+      setMessages(prev=>[...prev,{role:"ai",text:String(payload.reply||"No reply received.")}]);
+    }catch(error){
+      setMessages(prev=>[...prev,{role:"ai",text:error?.message||"The AI service is unavailable. Please try again."}]);
+    }finally{setTyping(false);}
   };
 
   const quickPrompt = (text) => {
@@ -129,7 +108,7 @@ export default function AssistantScreen() {
                   lineHeight: 22,
                 }}
               >
-                Ask anything about civic actions, reports, XP, rewards, and public behavior.
+                Ask civic questions about community, public services, sustainability, reporting, and more. General guidance only.
               </Text>
             </View>
 
