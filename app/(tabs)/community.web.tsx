@@ -88,9 +88,11 @@ export default function CommunityFeed(){
      setSuccess("Still waiting for confirmation from Firebase. A post shown below as Pending is not yet saved on the server. Please do not submit again.");
    },8000);
    try{
-     await publishCommunityPost({text:content,city,category});
+     const result=await publishCommunityPost({text:content,city,category});
      setContent("");setConsent(false);
-     setSuccess("Firebase confirmed your public contribution. It is now visible to other signed-in Nagrik members.");
+     setSuccess(result==="already-posted"
+       ?"This exact contribution was already confirmed by Firebase today. No duplicate was created."
+       :"Firebase confirmed your public contribution. It is now visible to other signed-in Nagrik members.");
    }catch(e:any){
      const code=e?.code||"unknown";
      const explanations:Record<string,string>={
