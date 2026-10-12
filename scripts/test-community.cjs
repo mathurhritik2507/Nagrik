@@ -11,6 +11,7 @@ vm.runInNewContext(transpiled,{
  require:(name)=>{
   if(name==="firebase/firestore")return {};
   if(name==="../firebaseConfig")return {auth:{currentUser:null},db:{}};
+  if(name==="../config/firestoreDatabase")return {NAGRIK_FIRESTORE_DATABASE_ID:"default"};
   throw Error("Unexpected module "+name);
  },
  Map,Date,Set,Math,Array,String,Object
