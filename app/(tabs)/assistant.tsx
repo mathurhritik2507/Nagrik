@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { auth } from "../../firebaseConfig";
+import {civicGuideAnswer} from "../../lib/civicGuide";
 import {
     ActivityIndicator,
     Keyboard,
@@ -26,11 +27,12 @@ const colors = {
 export default function AssistantScreen() {
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
+  const [mode,setMode]=useState<"guide"|"live">("guide");
 
   const [messages, setMessages] = useState([
     {
-      role: "ai",
-      text: "Namaste 👋 I’m your Nagrik Civic Assistant. Ask me how to improve your civic score, what action to do today, or how to report an issue.",
+      role: "guide",
+      text: "Namaste! Free Civic Guide has prepared civic-reference guidance and works without AI credits. Live AI is optional. This is not a government service.",
     },
   ]);
 
@@ -39,6 +41,16 @@ export default function AssistantScreen() {
     if(!question || typing)return;
     if(question.length>600){
       setMessages(prev=>[...prev,{role:"ai",text:"Keep your question within 600 characters."}]);
+      return;
+    }
+    if(mode==="guide"){
+      const prepared=civicGuideAnswer(question);
+      setMessages(prev=>[...prev,
+        {role:"user",text:question},
+        {role:"guide",text:prepared.reply}
+      ]);
+      setMessage("");
+      Keyboard.dismiss();
       return;
     }
     const account=auth.currentUser;
@@ -67,7 +79,12 @@ export default function AssistantScreen() {
       if(!response.ok)throw new Error(payload.error||"AI is unavailable right now.");
       setMessages(prev=>[...prev,{role:"ai",text:String(payload.reply||"No reply received.")}]);
     }catch(error){
-      setMessages(prev=>[...prev,{role:"ai",text:error?.message||"The AI service is unavailable. Please try again."}]);
+      // Never disguise a deterministic guide reply as a successful AI response.
+      const prepared=civicGuideAnswer(question);
+      setMessages(prev=>[...prev,
+        {role:"guide",text:"Live AI unavailable ("+(error?.message||"provider error")+"). Showing prepared reference material instead.\\n\\n"+prepared.reply}
+      ]);
+      setMode("guide");
     }finally{setTyping(false);}
   };
 
@@ -98,7 +115,7 @@ export default function AssistantScreen() {
               }}
             >
               <Text style={{ color: "#fff", fontSize: 32, fontWeight: "900" }}>
-                Civic Assistant 🤖
+                Nagrik Civic Assistant
               </Text>
 
               <Text
@@ -113,6 +130,21 @@ export default function AssistantScreen() {
               </Text>
             </View>
 
+            <View style={{marginTop:17,backgroundColor:"#FFF",padding:13,borderRadius:15}}>
+              <Text style={{fontSize:13,color:colors.muted,lineHeight:20,marginBottom:10}}>
+                Free Civic Guide is curated reference guidance, not generative AI. It runs without network API calls or billing.
+              </Text>
+              <View style={{flexDirection:"row",gap:9}}>
+                <TouchableOpacity accessibilityRole="button" onPress={()=>setMode("guide")}
+                  style={{flex:1,padding:11,alignItems:"center",borderRadius:10,backgroundColor:mode==="guide"?colors.primary:"#EEF2F8"}}>
+                  <Text style={{color:mode==="guide"?"#FFF":colors.text,fontWeight:"800"}}>Free Guide</Text>
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" onPress={()=>setMode("live")}
+                  style={{flex:1,padding:11,alignItems:"center",borderRadius:10,backgroundColor:mode==="live"?colors.primary:"#EEF2F8"}}>
+                  <Text style={{color:mode==="live"?"#FFF":colors.text,fontWeight:"800"}}>Live AI (credits)</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             <Text
               style={{
                 fontSize: 24,
@@ -177,6 +209,9 @@ export default function AssistantScreen() {
                   maxWidth: "85%",
                 }}
               >
+                {item.role!=="user"?<Text style={{color:colors.primary,fontWeight:"800",fontSize:11,marginBottom:5}}>
+                  {item.role==="guide"?"CIVIC GUIDE · PREPARED CONTENT":"LIVE AI"}
+                </Text>:null}
                 <Text
                   style={{
                     color: item.role === "user" ? "#fff" : colors.text,
@@ -227,7 +262,7 @@ export default function AssistantScreen() {
             <TextInput
               value={message}
               onChangeText={setMessage}
-              placeholder="Ask Nagrik AI..."
+              placeholder={mode==="guide"?"Ask the free Civic Guide...":"Ask Live AI..."}
               placeholderTextColor={colors.muted}
               style={{
                 flex: 1,
