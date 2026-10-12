@@ -17,7 +17,7 @@ export default function ForgotPasswordWeb(){
     setBusy(true);
     try{
       await sendPasswordResetEmail(auth,value);
-      setSuccess("If the address belongs to an eligible account, Firebase will send password-reset instructions. Check your inbox and spam folder.");
+      setSuccess("Firebase accepted the reset request. If this address has an eligible password-based account, check Inbox, Spam, and Promotions. Delivery is not guaranteed.");
     }catch(e:any){
       if(["auth/user-not-found","auth/invalid-credential"].includes(e?.code)){
         setSuccess("If the address belongs to an eligible account, you will receive password-reset instructions.");
@@ -25,8 +25,12 @@ export default function ForgotPasswordWeb(){
         setError("Too many requests. Please try again later.");
       } else if(e?.code==="auth/network-request-failed"){
         setError("Network error. Please check your connection and try again.");
-      } else{
-        setError("Could not request the reset email. Please try again shortly.");
+      } else if(e?.code==="auth/operation-not-allowed"){
+        setError("Password-based sign-in is disabled in this Firebase project.");
+      } else if(e?.code==="auth/unauthorized-domain"){
+        setError("The site domain is not authorized for Firebase Authentication.");
+      } else {
+        setError("Firebase could not process this request ("+(e?.code||"unknown")+"). Please contact the app owner.");
       }
     }finally{setBusy(false);}
   };
