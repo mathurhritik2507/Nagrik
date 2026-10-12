@@ -30,6 +30,7 @@ export default function WebHome(){
         Nothing in Nagrik files an official government complaint, verifies a contribution, or awards a real voucher. Live AI remains optional until the owner's API billing is active.
       </Text>
       <Button label="Try Free Civic Guide →" secondary onPress={()=>router.push("/assistant")}/>
+      <View style={{marginTop:10}}><Button label="Install Nagrik on your phone →" secondary onPress={()=>router.push("/install" as any)}/></View>
     </Card>
     <View style={{flexDirection:"row",flexWrap:"wrap",marginBottom:8}}>
       <Metric label="Actions recorded" value={data.actions.length}/>
