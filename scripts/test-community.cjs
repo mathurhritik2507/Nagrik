@@ -15,7 +15,11 @@ vm.runInNewContext(transpiled,{
  },
  Map,Date,Set,Math,Array,String,Object
 });
-const {communityRanking,categories}=moduleExports;
+const {communityRanking,communitySyncState,categories}=moduleExports;
+assert.equal(communitySyncState(true,false),"pending");
+assert.equal(communitySyncState(true,true),"pending");
+assert.equal(communitySyncState(false,true),"cached");
+assert.equal(communitySyncState(false,false),"confirmed");
 assert.ok(categories.includes("Cleanliness"));
 const now=new Date("2026-10-15T12:00:00Z");
 const sample=[
@@ -24,6 +28,8 @@ const sample=[
  {authorUid:"A",authorName:"Anita",city:"Pune",createdAt:{seconds:Date.parse("2026-10-15T11:00:00Z")/1000}},
  {authorUid:"C",authorName:"Chitra",city:"Delhi",createdAt:{seconds:Date.parse("2026-10-11T12:00:00Z")/1000}}
 ];
+sample.push({authorUid:"PENDING",authorName:"Unconfirmed",city:"Pune",syncState:"pending",createdAt:{seconds:Date.parse("2026-10-15T12:00:00Z")/1000}});
+sample.push({authorUid:"CACHED",authorName:"Offline",city:"Pune",syncState:"cached",createdAt:{seconds:Date.parse("2026-10-15T12:00:00Z")/1000}});
 const ranked=communityRanking(sample,now);
 assert.equal(ranked.length,2);
 assert.equal(ranked[0].uid,"A");
