@@ -3,7 +3,7 @@ import {Pressable,Text,View} from "react-native";
 import {router} from "expo-router";
 import {reload,sendEmailVerification} from "firebase/auth";
 import {auth} from "../../firebaseConfig";
-import {categories,CommunityPost,CommunityConnectionStatus,checkCommunityConnection,communityRanking,publishCommunityPost,subscribeCommunityPosts} from "../../lib/communityCloud";
+import {categories,CommunityPost,CommunityConnectionStatus,checkCommunityConnection,checkCommunityRestConnection,communityRanking,publishCommunityPost,subscribeCommunityPosts} from "../../lib/communityCloud";
 import {useCivicData} from "../../lib/webCivicStore";
 import {CommunityPostCard} from "../../components/web/CommunityPostCard";
 import {Button,Card,Chip,Empty,Field,Heading,Hero,Notice,Shell,palette} from "../../components/web/Kit";
@@ -26,11 +26,19 @@ export default function CommunityFeed(){
  const [verified,setVerified]=useState(auth.currentUser?.emailVerified===true);
  const [verifyBusy,setVerifyBusy]=useState(false);
  const [connection,setConnection]=useState<CommunityConnectionStatus | {kind:"checking";message:string}>({kind:"checking",message:"Testing a real Firestore server connection…"});
+ const [restConnection,setRestConnection]=useState<CommunityConnectionStatus | {kind:"checking";message:string}>({kind:"checking",message:"Testing independent Firestore HTTPS access…"});
  const [checking,setChecking]=useState(false);
  const runConnectionCheck=async()=>{
-   setChecking(true);setConnection({kind:"checking",message:"Testing a real Firestore server connection…"});
-   try{setConnection(await checkCommunityConnection());}
-   finally{setChecking(false);}
+   setChecking(true);
+   setConnection({kind:"checking",message:"Testing Firestore SDK connection…"});
+   setRestConnection({kind:"checking",message:"Testing independent HTTPS connection…"});
+   try{
+     const [sdkResult,restResult]=await Promise.all([
+       checkCommunityConnection(),checkCommunityRestConnection(),
+     ]);
+     setConnection(sdkResult);
+     setRestConnection(restResult);
+   }finally{setChecking(false);}
  };
  useEffect(()=>{
    const sub=subscribeCommunityPosts(items=>{setPosts(items);setFeedError("");setLoading(false);},
@@ -138,8 +146,12 @@ export default function CommunityFeed(){
   </Card>:null}
   <Card>
    <Heading muted="A post appearing locally does not mean it reached Firebase. This test contacts the server directly.">Firestore connection</Heading>
+   <Text style={{fontWeight:"800",color:palette.ink,marginBottom:5}}>Firebase SDK transport</Text>
    <Notice text={connection.message} error={connection.kind!=="connected"&&connection.kind!=="checking"}/>
-   <View style={{marginTop:12}}><Button label="Recheck Firestore connection" secondary busy={checking} onPress={runConnectionCheck}/></View>
+   <Text style={{fontWeight:"800",color:palette.ink,marginTop:14,marginBottom:5}}>Independent HTTPS / REST test</Text>
+   <Notice text={restConnection.message} error={restConnection.kind!=="connected"&&restConnection.kind!=="checking"}/>
+   {connection.kind!=="connected"&&restConnection.kind==="connected"?<Text style={{color:palette.muted,fontWeight:"700",marginTop:12,lineHeight:20}}>The REST API is reachable, but the Firebase SDK connection is stalled. Keep submissions disabled while we investigate the SDK transport.</Text>:null}
+   <View style={{marginTop:12}}><Button label="Recheck both connections" secondary busy={checking} onPress={runConnectionCheck}/></View>
    <Text style={{color:palette.muted,marginTop:10,fontSize:12,lineHeight:19}}>If this check times out, disable browser extensions or VPN temporarily and try again. Do not submit the same post twice.</Text>
   </Card>
   <Card>
