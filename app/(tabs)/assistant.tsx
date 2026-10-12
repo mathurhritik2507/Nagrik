@@ -56,7 +56,8 @@ export default function AssistantScreen() {
     Keyboard.dismiss();
     try{
       const token=await account.getIdToken();
-      const endpoint=(process.env.EXPO_PUBLIC_NAGRIK_API_BASE||"https://nagrik-eight.vercel.app").replace(/\\/$/,"")+"/api/civic-assistant";
+      const baseUrl=process.env.EXPO_PUBLIC_NAGRIK_API_BASE||"https://nagrik-eight.vercel.app";
+      const endpoint=(baseUrl.endsWith("/")?baseUrl.slice(0,-1):baseUrl)+"/api/civic-assistant";
       const response=await fetch(endpoint,{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
