@@ -42,11 +42,11 @@ export function Button({label,onPress,secondary=false,disabled=false,busy=false}
     {busy?<ActivityIndicator color={secondary?palette.ink:"#FFF"}/>:<Text style={{fontWeight:"800",fontSize:14,color:secondary?palette.navy:"#FFF"}}>{label}</Text>}
   </Pressable>;
 }
-export function Field({label,value,onChangeText,placeholder,multiline=false}:{label:string;value:string;onChangeText:(v:string)=>void;placeholder?:string;multiline?:boolean}){
+export function Field({label,value,onChangeText,placeholder,multiline=false,secure=false}:{label:string;value:string;onChangeText:(v:string)=>void;placeholder?:string;multiline?:boolean;secure?:boolean}){
   return <View style={{marginBottom:15}}>
     <Text style={{fontWeight:"700",fontSize:13,color:palette.ink,marginBottom:7}}>{label}</Text>
     <TextInput accessibilityLabel={label} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#94A0B1"
-      multiline={multiline} textAlignVertical={multiline?"top":"center"}
+      multiline={multiline} secureTextEntry={secure} textAlignVertical={multiline?"top":"center"}
       style={{borderWidth:1,borderColor:"#CFDAE5",borderRadius:12,paddingHorizontal:13,paddingVertical:12,backgroundColor:"#FCFDFE",color:palette.ink,
         minHeight:multiline?110:45,fontSize:14}}/>
   </View>;
