@@ -1,0 +1,20 @@
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const vm=require("node:vm");
+const ts=require("typescript");
+const source=fs.readFileSync("lib/useAccountHelp.ts","utf8");
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const exports={};
+vm.runInNewContext(js,{exports,require(name){
+ if(name==="react")return {};
+ if(name==="firebase/auth")return {};
+ if(name==="../firebaseConfig")return {auth:{currentUser:null}};
+ throw Error("Unexpected import "+name);
+}});
+const explain=exports.explainAccountError;
+assert.match(explain({code:"auth/too-many-requests"}),/temporarily limiting/);
+assert.match(explain({code:"auth/unauthorized-domain"}),/authorized domains/);
+assert.match(explain({code:"auth/invalid-credential"}),/incorrect/);
+assert.equal(explain(new Error("Enter a valid new email address.")),"Enter a valid new email address.");
+assert.match(explain({code:"auth/network-request-failed"}),/Cannot contact Firebase/);
+console.log("Account recovery UX error-code tests passed.");
