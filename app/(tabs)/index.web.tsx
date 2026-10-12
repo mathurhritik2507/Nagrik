@@ -21,6 +21,16 @@ export default function WebHome(){
         <Button label="Report an issue ↗" secondary onPress={()=>router.push("/report")}/>
       </View>
     </Hero>
+    <Card>
+      <Heading muted="No payment or OpenAI API credits are required for the core guided demo.">Explore Nagrik today</Heading>
+      <Text style={{color:palette.muted,lineHeight:22,marginBottom:8}}>
+        Free Civic Guide: prepared local reference answers, not generative AI. Actions, reports, photo proofs, XP and virtual weekly crates are saved only in this browser. Verified members can share text posts through the Firebase Community Feed.
+      </Text>
+      <Text style={{color:palette.muted,lineHeight:22,marginBottom:15}}>
+        Nothing in Nagrik files an official government complaint, verifies a contribution, or awards a real voucher. Live AI remains optional until the owner's API billing is active.
+      </Text>
+      <Button label="Try Free Civic Guide →" secondary onPress={()=>router.push("/assistant")}/>
+    </Card>
     <View style={{flexDirection:"row",flexWrap:"wrap",marginBottom:8}}>
       <Metric label="Actions recorded" value={data.actions.length}/>
       <Metric label="Reports saved" value={data.reports.length}/>
@@ -43,7 +53,7 @@ export default function WebHome(){
         {name:"🏆 Leaderboard",desc:"Explore weekly highlighted contributors and rankings.",to:"/leaderboard"},
         {name:"🎯 Civic challenges",desc:"Submit challenge proof and track progress.",to:"/challenges"},
         {name:"📍 Civic insights",desc:"Explore trends in your locally saved reports.",to:"/impact"},
-        {name:"💬 Civic guide",desc:"Ask open-ended civic questions using Nagrik AI (when configured).",to:"/assistant"},
+        {name:"💬 Free Civic Guide",desc:"Get prepared civic guidance at no cost. Optional Live AI requires API credits.",to:"/assistant"},
         {name:"👤 Your profile",desc:"View your civic history and update your details.",to:"/profile"},
       ].map(a=><Pressable key={a.to} accessibilityRole="button" onPress={()=>router.push(a.to as any)} style={({pressed})=>({width:"48%",minWidth:260,flexGrow:1,backgroundColor:"#FFF",padding:22,borderWidth:1,borderColor:palette.border,borderRadius:18,opacity:pressed?.75:1})}>
         <Text style={{fontSize:17,fontWeight:"800",color:palette.ink}}>{a.name}</Text>
