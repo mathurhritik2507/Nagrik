@@ -15,7 +15,6 @@ export default function AccountHelpWeb(){
  const [newEmailPassword,setNewEmailPassword]=useState("");
  const [passwordOpen,setPasswordOpen]=useState(false);
  const [emailOpen,setEmailOpen]=useState(false);
- const [donePassword,setDonePassword]=useState(false);
  if(loading)return <Shell title="Account help" subtitle="Checking Firebase Authentication…"><Card><Text>Loading account…</Text></Card></Shell>;
  if(!user)return <Shell title="Account help" subtitle="Sign in to view your verified account details.">
    <Card><Text style={{color:palette.muted,marginBottom:16}}>For a forgotten password, use the email reset form. If you are already signed in, you can change your password without email delivery.</Text>
@@ -27,7 +26,6 @@ export default function AccountHelpWeb(){
    await changePassword(currentPassword,newPassword,confirmPassword);
    // Credential fields should not be retained once submitted, regardless of result.
    setCurrentPassword("");setNewPassword("");setConfirmPassword("");
-   setDonePassword(true);
  };
  const updateEmail=async()=>{
    await changeEmail(newEmailPassword,nextEmail);
