@@ -1,0 +1,18 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler"
+  },
+  "include": [
+    "app/**/*.web.tsx",
+    "lib/**/*.ts",
+    "components/web/**/*.tsx",
+    "firebaseConfig.web.js"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
