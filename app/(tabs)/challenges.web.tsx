@@ -97,6 +97,16 @@ export default function WebChallenges(){
      <Text style={{color:palette.muted,marginTop:6,lineHeight:19}}>{p.description}</Text>
      <Image source={{uri:p.image}} style={{height:76,width:120,borderRadius:9,marginTop:8}}/>
    </View>)}</Card>
+   <Heading muted="A history of virtual badges unlocked on this device.">Reward cabinet</Heading>
+   <Card>{data.crateClaims.length===0?<Empty text="Open your first weekly crate to collect a digital badge."/>:
+     data.crateClaims.map(c=>{
+       const badge=REWARD_BADGES.find(b=>b.id===c.rewardId);
+       return <View key={c.weekKey} style={{paddingVertical:12,borderBottomWidth:1,borderColor:palette.border}}>
+         <Text style={{fontSize:18,fontWeight:"800",color:palette.ink}}>{badge?.emoji||"🏅"} {badge?.name||"Virtual badge"}</Text>
+         <Text style={{color:palette.muted,marginTop:5}}>Week of {c.weekKey} · Opened {dateLabel(c.openedAt)}</Text>
+         <Text style={{color:palette.orange,fontSize:12,marginTop:4}}>Digital collectible · No monetary value</Text>
+       </View>;
+     })}</Card>
    <Card><Heading>How the crate works</Heading>
      <Text style={{color:palette.muted,lineHeight:22}}>Submit photo and a description for {WEEKLY_GOAL} distinct safe missions during a Monday–Sunday UTC week. Open your crate once to reveal one virtual collectible badge. The current system runs locally in your browser and does not verify proof. Actual vouchers require sponsors, audited eligibility, anti-fraud checks and a secure server-side redemption system; none are offered yet.</Text>
    </Card>
