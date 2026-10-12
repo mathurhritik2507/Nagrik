@@ -1,0 +1,20 @@
+name: Nagrik web export
+on:
+  push:
+    branches: [main, feature/nagrik-web-v2-working-flows]
+  pull_request:
+    branches: [main]
+jobs:
+  expo-web-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run export:web
+      - name: Check generated web entry
+        run: test -f dist/index.html
