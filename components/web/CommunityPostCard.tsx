@@ -11,6 +11,7 @@ import {Card,Button,Field,Notice,palette,dateLabel} from "./Kit";
 export function CommunityPostCard({post}:{post:CommunityPost}){
  const uid=auth.currentUser?.uid;
  const own=post.authorUid===uid;
+ const serverConfirmed=post.syncState!=="pending"&&post.syncState!=="cached";
  const [likers,setLikers]=useState<string[]>([]);
  const [comments,setComments]=useState<CommunityComment[]>([]);
  const [expanded,setExpanded]=useState(false);
@@ -41,15 +42,20 @@ export function CommunityPostCard({post}:{post:CommunityPost}){
    </View>
   </View>
   <Text style={{color:palette.orange,fontWeight:"800",fontSize:12,marginBottom:8}}>{post.category} · Self-reported / unverified</Text>
+  {!serverConfirmed?<View style={{backgroundColor:"#FFF4E3",borderRadius:10,padding:11,marginBottom:13}}>
+    <Text style={{color:"#8E4B0C",fontWeight:"800",lineHeight:20}}>
+      {post.syncState==="pending"?"⏳ Pending — the browser shows this post locally, but Firebase hasn't confirmed it.":"⚠️ Offline/cached — waiting to verify this post with Firebase."}
+    </Text>
+  </View>:null}
   <Text style={{color:palette.ink,lineHeight:23,fontSize:14,marginBottom:14}}>{post.text}</Text>
   <View style={{flexDirection:"row",flexWrap:"wrap",gap:8}}>
-   <Button label={`${likers.includes(uid||"")?"♥ Liked":"♡ Like"} · ${likers.length}`} secondary busy={busy} onPress={()=>tryAction(()=>setPostLike(post.id,likers.includes(uid||"")),"Reaction saved.")}/>
-   <Button label={expanded?"Hide comments":"Comments"} secondary onPress={()=>setExpanded(v=>!v)}/>
-   {own?<Button label="Delete" secondary busy={busy} onPress={()=>{
+   <Button label={`${likers.includes(uid||"")?"♥ Liked":"♡ Like"} · ${likers.length}`} secondary disabled={!serverConfirmed} busy={busy} onPress={()=>tryAction(()=>setPostLike(post.id,likers.includes(uid||"")),"Reaction saved.")}/>
+   <Button label={expanded?"Hide comments":"Comments"} secondary disabled={!serverConfirmed} onPress={()=>setExpanded(v=>!v)}/>
+   {own?<Button label="Delete" secondary busy={busy} disabled={!serverConfirmed} onPress={()=>{
      if(typeof window==="undefined"||window.confirm("Delete your public community post?")){
        tryAction(()=>deleteCommunityPost(post),"Post deleted.");
      }
-   }}/>:<Button label={flagging?"Hide report":"Report post"} secondary onPress={()=>setFlagging(v=>!v)}/>}
+   }}/>:<Button label={flagging?"Hide report":"Report post"} secondary disabled={!serverConfirmed} onPress={()=>setFlagging(v=>!v)}/>}
   </View>
   {flagging&&!own?<View style={{marginTop:12}}>
     <Text style={{fontSize:12,color:palette.muted,marginBottom:7}}>Why are you reporting this post?</Text>
