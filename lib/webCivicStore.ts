@@ -4,14 +4,15 @@
  */
 import { useEffect, useState } from "react";
 import { auth } from "../firebaseConfig";
+import { CrateClaim, WEEKLY_GOAL, weekKeyFor, currentWeekProgress, chooseVirtualBadge } from "./weeklyRewards";
 
 export type CivicAction = { id: string; createdAt: string; category: string; description: string; image?: string };
 export type CivicReport = { id: string; createdAt: string; category: string; location: string; description: string; image?: string; status: "Saved locally" };
 export type CivicProof = { id: string; createdAt: string; challengeId: string; description: string; image: string; status: "Unverified" };
 export type CivicProfile = { city: string; bio: string };
-export type CivicData = { actions: CivicAction[]; reports: CivicReport[]; proofs: CivicProof[]; profile: CivicProfile };
+export type CivicData = { actions: CivicAction[]; reports: CivicReport[]; proofs: CivicProof[]; profile: CivicProfile; crateClaims: CrateClaim[] };
 const EVENT = "nagrik-civic-updated";
-const defaults = (): CivicData => ({ actions: [], reports: [], proofs: [], profile: { city: "Pune", bio: "" } });
+const defaults = (): CivicData => ({ actions: [], reports: [], proofs: [], profile: { city: "Pune", bio: "" }, crateClaims: [] });
 const storageKey = (uid: string) => "nagrik:civic:v2:" + uid;
 
 export function readCivic(uid: string): CivicData {
@@ -24,6 +25,7 @@ export function readCivic(uid: string): CivicData {
       actions: Array.isArray(parsed.actions) ? parsed.actions : [],
       reports: Array.isArray(parsed.reports) ? parsed.reports : [],
       proofs: Array.isArray(parsed.proofs) ? parsed.proofs : [],
+      crateClaims: Array.isArray(parsed.crateClaims) ? parsed.crateClaims : [],
       profile: { city: String(parsed.profile?.city || "Pune"), bio: String(parsed.profile?.bio || "") },
     };
   } catch {
@@ -73,9 +75,27 @@ export function useCivicData() {
   };
   const addProof = (item: Pick<CivicProof, "challengeId" | "description" | "image">) => {
     if (!item.image || item.description.trim().length < 12) throw new Error("Add a photo and describe your action in at least 12 characters.");
-    updateCivic(uid, state => ({
-      ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Unverified" }, ...state.proofs].slice(0, 20),
-    }));
+    updateCivic(uid, state => {
+      if(currentWeekProgress(state.proofs).has(item.challengeId)){
+        throw new Error("You already submitted proof for that mission this week. Try a different mission.");
+      }
+      return {
+        ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Unverified" }, ...state.proofs].slice(0, 60),
+      };
+    });
+  };
+  const openWeeklyCrate = () => {
+    if(!uid) throw new Error("Please sign in first.");
+    let prize: ReturnType<typeof chooseVirtualBadge> | null = null;
+    updateCivic(uid, state => {
+      const weekKey=weekKeyFor(new Date());
+      if(state.crateClaims.some(c=>c.weekKey===weekKey))throw new Error("You already opened your crate this week.");
+      const unique=currentWeekProgress(state.proofs);
+      if(unique.size<WEEKLY_GOAL)throw new Error(`Complete ${WEEKLY_GOAL} different challenges this week to unlock your crate.`);
+      prize=chooseVirtualBadge(uid,weekKey);
+      return {...state,crateClaims:[{weekKey,rewardId:prize.id,openedAt:new Date().toISOString(),kind:"virtual-badge"},...state.crateClaims]};
+    });
+    return prize!;
   };
   const saveProfile = (profile: CivicProfile) => {
     if (!profile.city.trim()) throw new Error("Enter your city.");
@@ -95,5 +115,5 @@ export function useCivicData() {
     URL.revokeObjectURL(url);
   };
   const points = data.actions.length * 50 + data.reports.length * 20;
-  return { data, addAction, addReport, addProof, saveProfile, clearLocalRecords, downloadRecords, points };
+  return { data, addAction, addReport, addProof, saveProfile, clearLocalRecords, downloadRecords, openWeeklyCrate, points };
 }
