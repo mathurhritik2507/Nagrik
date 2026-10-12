@@ -70,7 +70,7 @@ export function useCivicData() {
       throw new Error("Add a location and a clear description of at least 12 characters.");
     }
     updateCivic(uid, state => ({
-      ...state, reports: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Saved locally" }, ...state.reports].slice(0, 35),
+      ...state, reports: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Saved locally" as const }, ...state.reports].slice(0, 35),
     }));
   };
   const addProof = (item: Pick<CivicProof, "challengeId" | "description" | "image">) => {
@@ -80,7 +80,7 @@ export function useCivicData() {
         throw new Error("You already submitted proof for that mission this week. Try a different mission.");
       }
       return {
-        ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Unverified" }, ...state.proofs].slice(0, 60),
+        ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Unverified" as const }, ...state.proofs].slice(0, 60),
       };
     });
   };
