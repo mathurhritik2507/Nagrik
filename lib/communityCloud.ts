@@ -54,6 +54,11 @@ export async function publishCommunityPost(input:{text:string;city:string;catego
     moderation:"unverified",
   });
 }
+export function communitySyncState(hasPendingWrites:boolean,fromCache:boolean):NonNullable<CommunityPost["syncState"]>{
+  if(hasPendingWrites)return "pending";
+  return fromCache?"cached":"confirmed";
+}
+
 export function subscribeCommunityPosts(onData:(items:CommunityPost[])=>void,onError:(message:string)=>void,max=40):Unsubscribe{
   // Firestore applies local writes optimistically. Include metadata changes so
   // the feed can distinguish pending, cached and server-confirmed documents.
@@ -62,7 +67,7 @@ export function subscribeCommunityPosts(onData:(items:CommunityPost[])=>void,onE
     snap=>onData(snap.docs.map(d=>({
       id:d.id,
       ...d.data(),
-      syncState:d.metadata.hasPendingWrites?"pending":snap.metadata.fromCache?"cached":"confirmed",
+      syncState:communitySyncState(d.metadata.hasPendingWrites,snap.metadata.fromCache),
     } as CommunityPost))),
     err=>onError(err.code==="permission-denied"?
       "Firestore denied feed access. Check email verification, authentication and the published security rules.":"Unable to load the community feed: "+(err.code||err.message)));
