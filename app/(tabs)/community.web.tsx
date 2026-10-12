@@ -93,6 +93,7 @@ export default function CommunityFeed(){
      <Notice error text="For community safety, verified email is required before sharing a public post."/>
      <Text style={{color:palette.ink,fontWeight:"700",marginBottom:8}}>Firebase sign-in address: {auth.currentUser?.email||"Unavailable"}</Text>
      <Text style={{color:palette.muted,fontSize:12,lineHeight:19,marginBottom:12}}>Verification is sent to this address, not necessarily the email shown in an older profile. Sending a request does not confirm inbox delivery.</Text>
+     <View style={{marginBottom:12}}><Button label="Account help · check email or change password" secondary onPress={()=>router.push("/account-help")}/></View>
      <View style={{flexDirection:"row",flexWrap:"wrap",gap:8}}>
        <Button secondary busy={verifyBusy} label="Send verification email" onPress={()=>emailAction(true)}/>
        <Button secondary busy={verifyBusy} label="I've verified — check again" onPress={()=>emailAction(false)}/>
