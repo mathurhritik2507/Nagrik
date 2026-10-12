@@ -18,6 +18,7 @@ jobs:
       - run: node --check api/civic-assistant.js
       - run: node scripts/test-weekly-rewards.cjs
       - run: node scripts/test-civic-api.cjs
+      - run: node scripts/test-civic-guide.cjs
       - run: node scripts/test-community.cjs
       - run: node scripts/test-firestore-rest.cjs
       - run: node scripts/test-firestore-database-target.cjs
