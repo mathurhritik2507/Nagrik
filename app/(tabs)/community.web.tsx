@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useRef,useState} from "react";
 import {Pressable,Text,View} from "react-native";
 import {router} from "expo-router";
 import {reload,sendEmailVerification} from "firebase/auth";
@@ -13,6 +13,10 @@ export default function CommunityFeed(){
  const [posts,setPosts]=useState<CommunityPost[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
+ const [feedError,setFeedError]=useState("");
+ const [waitingForServer,setWaitingForServer]=useState(false);
+ const publishingRef=useRef(false);
+ const confirmationTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const [success,setSuccess]=useState("");
  const [content,setContent]=useState("");
  const [city,setCity]=useState(data.profile.city||"Pune");
@@ -21,8 +25,12 @@ export default function CommunityFeed(){
  const [busy,setBusy]=useState(false);
  const [verified,setVerified]=useState(auth.currentUser?.emailVerified===true);
  const [verifyBusy,setVerifyBusy]=useState(false);
- useEffect(()=>{const sub=subscribeCommunityPosts(items=>{setPosts(items);setError("");setLoading(false);},
-   msg=>{setError(msg);setLoading(false);},50);return sub;},[]);
+ useEffect(()=>{
+   const sub=subscribeCommunityPosts(items=>{setPosts(items);setFeedError("");setLoading(false);},
+     msg=>{setFeedError(msg);setLoading(false);},50);
+   return sub;
+ },[]);
+ useEffect(()=>()=>{if(confirmationTimer.current)clearTimeout(confirmationTimer.current);},[]);
  useEffect(()=>{if(data.profile.city&&city==="Pune")setCity(data.profile.city);},[data.profile.city]);
  const emailAction=async(send:boolean)=>{
    const user=auth.currentUser;if(!user)return;
@@ -52,15 +60,42 @@ export default function CommunityFeed(){
    finally{setVerifyBusy(false);}
  };
  const publish=async()=>{
+   // Firestore may render a local copy BEFORE addDoc receives server approval.
+   // Guard synchronously so double clicks cannot create two documents.
+   if(publishingRef.current)return;
    setError("");setSuccess("");
    if(!consent){setError("You must opt in before making a public post.");return;}
-   setBusy(true);
+   if(content.trim().length<20||content.trim().length>650){
+     setError("Write a contribution between 20 and 650 characters.");return;
+   }
+   if(!verified){setError("Verify your Firebase email before publishing.");return;}
+   publishingRef.current=true;
+   setBusy(true);setWaitingForServer(false);
+   confirmationTimer.current=setTimeout(()=>{
+     setWaitingForServer(true);
+     setSuccess("Still waiting for confirmation from Firebase. A post shown below as Pending is not yet saved on the server. Please do not submit again.");
+   },8000);
    try{
      await publishCommunityPost({text:content,city,category});
      setContent("");setConsent(false);
-     setSuccess("Your community contribution was published. It is self-reported and visible to other signed-in members.");
-   }catch(e:any){setError(e.message||"Unable to publish. Check that the Firestore database and security rules are configured.");}
-   finally{setBusy(false);}
+     setSuccess("Firebase confirmed your public contribution. It is now visible to other signed-in Nagrik members.");
+   }catch(e:any){
+     const code=e?.code||"unknown";
+     const explanations:Record<string,string>={
+       "permission-denied":"Firebase rejected your post. Check that your email is verified and that the community rules permit posting.",
+       "unavailable":"Firebase is unavailable or your connection is offline. The post may have appeared locally but is not confirmed.",
+       "unauthenticated":"Your login has expired. Sign in again.",
+       "failed-precondition":"Firebase rejected the write because a database requirement was not met.",
+     };
+     setSuccess("");
+     setError((explanations[code]||"Firestore could not confirm your contribution.")+" ("+code+"). Do not retry until you check whether the post exists in Firestore.");
+   }finally{
+     if(confirmationTimer.current)clearTimeout(confirmationTimer.current);
+     confirmationTimer.current=null;
+     publishingRef.current=false;
+     setWaitingForServer(false);
+     setBusy(false);
+   }
  };
  const rank=communityRanking(posts).slice(0,3);
  return <Shell title="Community feed" subtitle="Celebrate neighbors making a difference. Real posts from Nagrik members, not sample content." eyebrow="COMMUNITY / SHARED CONTRIBUTIONS">
@@ -109,12 +144,13 @@ export default function CommunityFeed(){
      <Text style={{color:palette.ink,flex:1,lineHeight:22,fontSize:13}}>I agree to publish my name, city and this message to other signed-in Nagrik members. I will not include phone numbers, private addresses, pictures of strangers or sensitive information.</Text>
    </Pressable>
    <Notice text={error} error/><Notice text={success}/>
-   <Button label="Publish to community feed" disabled={!verified||!consent||!content.trim()} busy={busy} onPress={publish}/>
+   <Button label={waitingForServer?"Awaiting Firebase confirmation — do not resubmit":"Publish to community feed"} disabled={!verified||!consent||content.trim().length<20||busy} busy={busy&&!waitingForServer} onPress={publish}/>
    <Text style={{color:palette.muted,fontSize:12,marginTop:12,lineHeight:19}}>Public feed posts are text-only in this version. Your separately saved issue reports, challenge proof photos and private actions are not automatically published.</Text>
   </Card>
   <Heading muted="Latest self-reported activity from signed-in community members.">Latest contributions</Heading>
+  {feedError?<Notice text={feedError} error/>:null}
   {loading?<Card><Text style={{color:palette.muted}}>Loading community posts…</Text></Card>:
-   posts.length===0?<Card><Empty text={error?"Community feed is unavailable until database rules are configured.":"No public contributions yet. Be the first verified member to share a civic action."}/></Card>:
+   posts.length===0?<Card><Empty text={feedError?"Unable to display shared contributions. Check the error above.":"No confirmed public contributions yet. Be the first verified member to share a civic action."}/></Card>:
    posts.map(p=><CommunityPostCard key={p.id} post={p}/>)}
  </Shell>;
 }
