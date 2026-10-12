@@ -6,11 +6,13 @@ const fs=require("node:fs");
   const browser=await chromium.launch({headless:true,executablePath:exe,args:["--no-sandbox","--disable-dev-shm-usage"]});
   const page=await browser.newPage({viewport:{width:1280,height:800}});
   const errors=[];
+  const aiApiCalls=[];
+  page.on("request",r=>{if(r.url().includes("/api/civic-assistant"))aiApiCalls.push(r.url());});
   page.on("pageerror",e=>errors.push("PAGE ERROR "+e.stack));
   page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE ERROR "+m.text())});
   page.on("requestfailed",r=>errors.push("REQUEST FAILED "+r.url()+" "+r.failure()?.errorText));
   const origin="http://127.0.0.1:3000";
-  for (const path of ["/login","/forgot-password","/account-help","/","/community"]){
+  for (const path of ["/login","/demo","/forgot-password","/account-help","/","/community"]){
     console.log("CHECK",path);
     errors.length=0;
     await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:30000});
@@ -19,9 +21,17 @@ const fs=require("node:fs");
     console.log("URL",page.url());
     console.log("BODY",JSON.stringify(text));
     console.log("JS_ERRORS",JSON.stringify(errors.slice(0,12)));
-    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
+    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/demo"?"demo":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
     if(text.trim().length<12)throw Error("Blank screen at "+path+"; errors: "+errors.join("; "));
     if(path==="/login")assert.match(text,/Welcome back|Sign in|Nagrik/i,"Login screen missing");
+    if(path==="/demo"){
+      assert.match(text,/FREE PUBLIC DEMO/i,"Guest public demo title missing");
+      assert.match(text,/Get free guidance/i,"Guest guidance action missing");
+      await page.getByRole("button",{name:"How can I report a pothole responsibly?"}).click();
+      await page.getByText("Potholes and damaged roads",{exact:false}).first().waitFor({timeout:8000});
+      assert.equal(aiApiCalls.length,0,"Guest guide must not call the AI API");
+      console.log("GUEST_GUIDE_INTERACTION_PASSED");
+    }
     if(path==="/forgot-password")assert.match(text,/Reset your password|Send reset email/i,"Password reset screen missing");
     if(errors.some(e=>e.startsWith("PAGE ERROR")))throw Error("Runtime exception at "+path+": "+errors.join("; "));
   }
