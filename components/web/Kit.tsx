@@ -17,7 +17,7 @@ export function Shell({ title, subtitle, eyebrow="NAGRIK / CIVIC SPACE", childre
       </View>
       {children}
       <Text style={{textAlign:"center",fontSize:11,color:palette.muted,marginTop:30}}>
-        Nagrik public beta · Records on this website are stored in this browser only. Not an official municipal reporting service.
+        Nagrik beta · Personal civic records remain in this browser. Posts you explicitly publish are shared with signed-in members. Not an official government service.
       </Text>
     </View>
   </ScrollView>;
