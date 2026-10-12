@@ -7,7 +7,7 @@
  */
 import { auth, db } from "../firebaseConfig";
 import {
-  addDoc, collection, deleteDoc, doc, getDocsFromServer, limit,
+  addDoc, collection, deleteDoc, doc, getDocFromServer, getDocsFromServer, limit,
   onSnapshot, orderBy, query, serverTimestamp, setDoc,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -39,12 +39,35 @@ const cleanText=(input:string,min:number,max:number,what:string)=>{
   if(v.length<min||v.length>max)throw new Error(`${what} must be ${min}–${max} characters.`);
   return v;
 };
-export async function publishCommunityPost(input:{text:string;city:string;category:string}){
+// Using a stable document ID for an identical submission on the same UTC day
+// reduces accidental duplicate posts after retries/refreshes. This is not an
+// anti-spam replacement for server-side controls or moderator review.
+export function communitySubmissionId(userId:string,category:string,city:string,text:string,utcDay:string):string{
+  const normalized=[userId,utcDay,category,city.trim().toLowerCase(),text.trim().toLowerCase()].join("\\u001f");
+  let a=2166136261,b=3339675911;
+  for(let i=0;i<normalized.length;i++){
+    const n=normalized.charCodeAt(i);
+    a=Math.imul(a^n,16777619)>>>0;
+    b=Math.imul(b^(n+i),2246822519)>>>0;
+  }
+  return "p_"+a.toString(36).padStart(7,"0")+b.toString(36).padStart(7,"0");
+}
+
+export async function publishCommunityPost(input:{text:string;city:string;category:string}):Promise<"posted"|"already-posted">{
   const u=requireEmail();
   if(!categories.includes(input.category))throw new Error("Choose a valid category.");
   const text=cleanText(input.text,20,650,"Post");
   const city=cleanText(input.city,2,65,"City");
-  await addDoc(collection(db,"communityPosts"),{
+  const id=communitySubmissionId(u.uid,input.category,city,text,new Date().toISOString().slice(0,10));
+  const ref=doc(db,"communityPosts",id);
+  // A server-only preflight prevents a cached/pending post from looking like
+  // a successful write and makes same-content retries idempotent.
+  const existing=await getDocFromServer(ref);
+  if(existing.exists()){
+    if(existing.data().authorUid===u.uid && existing.data().text===text)return "already-posted";
+    throw new Error("A conflicting post ID already exists. Try again with different wording.");
+  }
+  await setDoc(ref,{
     authorUid:u.uid,
     authorName:names(u.displayName||"Nagrik member"),
     city:names(city,65),
@@ -53,6 +76,7 @@ export async function publishCommunityPost(input:{text:string;city:string;catego
     createdAt:serverTimestamp(),
     moderation:"unverified",
   });
+  return "posted";
 }
 export type CommunityConnectionStatus =
   | {kind:"connected";message:string}
