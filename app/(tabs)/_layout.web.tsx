@@ -6,7 +6,7 @@ import {onAuthStateChanged,User} from "firebase/auth";
 import {auth} from "../../firebaseConfig";
 import {palette} from "../../components/web/Kit";
 
-const icons:Record<string,any>={index:"home-outline",explore:"add-circle-outline",challenges:"flag-outline",report:"document-text-outline",profile:"person-circle-outline"};
+const icons:Record<string,any>={index:"home-outline",community:"people-outline",explore:"add-circle-outline",challenges:"flag-outline",report:"document-text-outline",profile:"person-circle-outline"};
 export default function WebTabs(){
  const [user,setUser]=useState<User|null|undefined>(undefined);
  const {width}=useWindowDimensions();
@@ -22,7 +22,8 @@ export default function WebTabs(){
    tabBarIcon:({color,size})=><Ionicons name={icons[route.name]||"ellipse-outline"} size={size} color={color}/>,
  })}>
    <Tabs.Screen name="index" options={{title:"Home"}}/>
-   <Tabs.Screen name="explore" options={{title:"Actions"}}/>
+   <Tabs.Screen name="community" options={{title:"Feed"}}/>
+   <Tabs.Screen name="explore" options={{href:null}}/>
    <Tabs.Screen name="challenges" options={{title:"Challenges"}}/>
    <Tabs.Screen name="report" options={{title:"Reports"}}/>
    <Tabs.Screen name="profile" options={{title:"Profile"}}/>
