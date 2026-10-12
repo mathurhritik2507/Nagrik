@@ -8,7 +8,8 @@ import { auth } from "../firebaseConfig";
 
 /** Firebase does not expose whether an email was delivered to an inbox. */
 export function explainAccountError(error: unknown): string {
-  const code = (error as { code?: string })?.code || "unknown";
+  const code = (error as { code?: string })?.code;
+  if (!code && error instanceof Error) return error.message;
   const map: Record<string,string> = {
     "auth/too-many-requests": "Firebase is temporarily limiting requests. Wait before trying again.",
     "auth/network-request-failed": "Cannot contact Firebase. Check your connection.",
@@ -26,7 +27,7 @@ export function explainAccountError(error: unknown): string {
     "auth/unsupported-first-factor": "This account cannot use password authentication for this operation.",
     "auth/provider-already-linked": "This sign-in method is already connected.",
   };
-  return (map[code] || "Firebase could not complete this request.") + " (" + code + ")";
+  return (map[code || ""] || "Firebase could not complete this request.") + " (" + (code || "unknown") + ")";
 }
 
 export function useAccountHelp() {
@@ -50,8 +51,8 @@ export function useAccountHelp() {
     if(!u)throw Object.assign(new Error("Sign in first"),{code:"auth/invalid-user-token"});
     await reload(u);
     await u.getIdToken(true);
-    setUser(auth.currentUser ? Object.assign(Object.create(Object.getPrototypeOf(u)),u) : null);
-    // The SDK mutates the same User object; explicitly set a new reference for React.
+    setUser(auth.currentUser ? ({ ...u } as User) : null);
+    // Firebase mutates the original User on reload. Copy UI fields to force React to redraw.
     return u.emailVerified
       ? "Verified! Your account can now publish to the community."
       : "Firebase still reports this account as unverified. Check the inbox associated with the address above.";
