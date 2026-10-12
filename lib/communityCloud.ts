@@ -6,6 +6,7 @@
  * Rankings measure self-reported public contributions, NOT verified impact.
  */
 import { auth, db } from "../firebaseConfig";
+import { NAGRIK_FIRESTORE_DATABASE_ID } from "../config/firestoreDatabase";
 import {
   addDoc, collection, deleteDoc, doc, getDocFromServer, getDocsFromServer, limit,
   onSnapshot, orderBy, query, serverTimestamp, setDoc,
@@ -106,10 +107,13 @@ export async function checkCommunityConnection(timeoutMs=12000):Promise<Communit
  * streaming transport. Uses the CURRENT Firebase user's ID token, so Firestore
  * Security Rules still apply. Never show/log the token or response body.
  */
-type FirestoreProbe={databaseId:string;httpStatus:number;status:string;detail:string};
+/** Independent authenticated HTTPS query to the SAME named database as the SDK.
+ * Do not probe "(default)": it is a different, absent database in Nagrik and
+ * must not be presented as a failure when the configured database works.
+ */
 export async function checkCommunityRestConnection(timeoutMs=12000):Promise<CommunityConnectionStatus>{
   const user=auth.currentUser;
-  if(!user)return {kind:"unauthenticated",message:"Sign in to test Firestore REST access."};
+  if(!user)return {kind:"unauthenticated",message:"Sign in to test Firestore HTTPS access."};
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -117,71 +121,48 @@ export async function checkCommunityRestConnection(timeoutMs=12000):Promise<Comm
     if(!projectId)return {kind:"error",message:"Firebase project ID is missing from web configuration."};
     const token=await user.getIdToken();
     if(controller.signal.aborted)return {kind:"timeout",message:"Firebase token retrieval timed out."};
-
-    // A Firebase project can have BOTH (default) and a separate named 'default'
-    // database. The Firestore SDK uses (default) unless configured explicitly.
-    // Probe both safely using read-only runQuery; no collection is created.
-    const probe=async(databaseId:string):Promise<FirestoreProbe>=>{
-      const url="https://firestore.googleapis.com/v1/projects/"+
-        encodeURIComponent(projectId)+"/databases/"+encodeURIComponent(databaseId)+"/documents:runQuery";
-      const response=await fetch(url,{
-        method:"POST",
-        headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
-        body:JSON.stringify({structuredQuery:{from:[{collectionId:"communityPosts"}],limit:1}}),
-        cache:"no-store",
-        signal:controller.signal,
-      });
-      if(response.ok)return {databaseId,httpStatus:response.status,status:"OK",detail:""};
-      let status="UNKNOWN",detail="";
-      try{
-        const json=await response.json();
-        if(typeof json?.error?.status==="string")status=json.error.status.slice(0,45);
-        if(typeof json?.error?.message==="string")detail=json.error.message.slice(0,200);
-      }catch{}
-      return {databaseId,httpStatus:response.status,status,detail};
-    };
-    const [defaultDb,namedDb]=await Promise.all([
-      probe("(default)"),probe("default"),
-    ]);
-    const summary="(default): HTTP "+defaultDb.httpStatus+" ("+defaultDb.status+
-      "); named default: HTTP "+namedDb.httpStatus+" ("+namedDb.status+").";
-    if(defaultDb.httpStatus===200)return {
+    const databaseId=NAGRIK_FIRESTORE_DATABASE_ID;
+    const url="https://firestore.googleapis.com/v1/projects/"+
+      encodeURIComponent(projectId)+"/databases/"+
+      encodeURIComponent(databaseId)+"/documents:runQuery";
+    const response=await fetch(url,{
+      method:"POST",
+      headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+      body:JSON.stringify({structuredQuery:{from:[{collectionId:"communityPosts"}],limit:1}}),
+      cache:"no-store",
+      signal:controller.signal,
+    });
+    if(response.ok)return {
       kind:"connected",
-      message:"Firestore (default) database is accessible by HTTPS. "+summary+" SDK transport still needs its own connectivity check.",
+      message:"Firestore HTTPS connected to database '"+databaseId+"' (HTTP "+
+        response.status+"). Read access confirmed, including when the feed is empty.",
     };
-    if(defaultDb.httpStatus===404&&namedDb.httpStatus===200)return {
-      kind:"error",
-      message:"DATABASE ID MISMATCH: The named database 'default' is accessible, but the application SDK is connected to '(default)', which returned 404. "+
-        summary+" Configure the web SDK to explicitly use database ID 'default' before enabling publishing.",
-    };
-    if(defaultDb.httpStatus===404&&namedDb.httpStatus===403)return {
-      kind:"error",
-      message:"POSSIBLE DATABASE ID MISMATCH: '(default)' was not found and named 'default' returned permission denied. "+
-        summary+" Verify which database contains your Posts collection and review its rules.",
-    };
-    if(defaultDb.httpStatus===401||defaultDb.httpStatus===403)return {
+    let status="UNKNOWN";
+    // Only disclose standard error status: never expose credentials or response contents.
+    try{
+      const json=await response.json();
+      if(typeof json?.error?.status==="string")status=json.error.status.slice(0,45);
+    }catch{}
+    if(response.status===401||response.status===403)return {
       kind:"permission-denied",
-      message:"Firestore (default) query was rejected. "+summary+
-        (defaultDb.detail?" Detail: "+defaultDb.detail:"")+" Check published rules and sign-in status.",
+      message:"Firestore HTTPS access denied for database '"+databaseId+
+        "' (HTTP "+response.status+", "+status+"). Review sign-in and database security rules.",
     };
-    if(defaultDb.httpStatus===404)return {
+    if(response.status===404)return {
       kind:"error",
-      message:"Firestore (default) query returned 404. "+summary+
-        (defaultDb.detail?" Detail: "+defaultDb.detail:"")+
-        (namedDb.detail?" Named database detail: "+namedDb.detail:"")+
-        " Check the exact database IDs in your Firebase console. Do not create another database without confirming.",
+      message:"Firestore HTTPS database '"+databaseId+"' returned HTTP 404 ("+status+
+        "). Confirm this named database exists and is accessible for the deployed Firebase project.",
     };
-    return {
-      kind:"error",
-      message:"Firestore query diagnostics: "+summary+
-        (defaultDb.detail?" Detail: "+defaultDb.detail:"")+
-        " Check network/API settings and Firebase database IDs.",
+    if(response.status===429)return {
+      kind:"error",message:"Firestore HTTPS was rate limited (HTTP 429). Retry later.",
     };
+    return {kind:"error",message:"Firestore HTTPS database '"+databaseId+
+      "' returned HTTP "+response.status+" ("+status+")."};
   }catch(e:any){
     if(e?.name==="AbortError")return {
-      kind:"timeout",message:"Firestore HTTPS diagnostic timed out. Check network, browser extensions and VPN."
+      kind:"timeout",message:"Firestore HTTPS query timed out. Check the browser network, VPN and extensions.",
     };
-    return {kind:"offline",message:"Firestore HTTPS request failed before an HTTP result. Check connectivity to firestore.googleapis.com."};
+    return {kind:"offline",message:"Firestore HTTPS request failed. Check browser access to firestore.googleapis.com."};
   }finally{clearTimeout(timer);}
 }
 
