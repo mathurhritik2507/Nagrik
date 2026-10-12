@@ -4,6 +4,7 @@ const fs=require("node:fs");
 (async()=>{
   const exe=process.env.CHROME_BIN||"/usr/bin/google-chrome";
   const browser=await chromium.launch({headless:true,executablePath:exe,args:["--no-sandbox","--disable-dev-shm-usage"]});
+  try{
   const page=await browser.newPage({viewport:{width:1280,height:800}});
   const errors=[];
   const aiApiCalls=[];
@@ -36,5 +37,5 @@ const fs=require("node:fs");
     if(errors.some(e=>e.startsWith("PAGE ERROR")))throw Error("Runtime exception at "+path+": "+errors.join("; "));
   }
   console.log("BROWSER SMOKE PASSED");
-  await browser.close();
+  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
