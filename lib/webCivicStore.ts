@@ -81,6 +81,19 @@ export function useCivicData() {
     if (!profile.city.trim()) throw new Error("Enter your city.");
     updateCivic(uid, state => ({ ...state, profile: { city: profile.city.trim().slice(0, 80), bio: profile.bio.trim().slice(0, 280) } }));
   };
+  const clearLocalRecords = () => {
+    if (!uid || typeof window === "undefined") throw new Error("Sign in to manage your records.");
+    window.localStorage.removeItem(storageKey(uid));
+    window.dispatchEvent(new Event(EVENT));
+  };
+  const downloadRecords = () => {
+    if (typeof window === "undefined") return;
+    const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download="nagrik-my-records.json"; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
   const points = data.actions.length * 50 + data.reports.length * 20;
-  return { data, addAction, addReport, addProof, saveProfile, points };
+  return { data, addAction, addReport, addProof, saveProfile, clearLocalRecords, downloadRecords, points };
 }
