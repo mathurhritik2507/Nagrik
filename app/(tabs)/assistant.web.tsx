@@ -1,9 +1,9 @@
-import React,{useState} from "react";
+import React,{useRef,useState} from "react";
 import {ScrollView,Text,View} from "react-native";
 import {auth} from "../../firebaseConfig";
 import {Shell,Card,Heading,Field,Button,Chip,Notice,palette} from "../../components/web/Kit";
 
-type Message={role:"you"|"ai";text:string};
+type Message={role:"you"|"ai";text:string;delivery?:"pending"|"failed"|"sent";requestId?:number};
 const starters=[
  "How can I report a pothole responsibly?",
  "How can I organize a neighborhood cleanliness drive?",
@@ -18,36 +18,53 @@ export default function CivicAIWeb(){
    {role:"ai",text:"Namaste! Ask me about civic rights, sanitation, waste, roads, accessibility, volunteering, sustainability, neighborhood improvements and more."}
  ]);
  const [busy,setBusy]=useState(false);
+ const inFlight=useRef(false);
+ const nextRequestId=useRef(0);
  const [error,setError]=useState("");
  const send=async(question:string)=>{
    const text=question.trim();
-   if(!text||busy)return;
+   // Ref prevents a second request even when a double-click happens before
+   // React has rendered the busy state.
+   if(!text||inFlight.current)return;
    if(text.length>600){setError("Questions must be 600 characters or less.");return;}
    const user=auth.currentUser;
    if(!user){setError("Please sign in again to use the civic assistant.");return;}
-   setError("");setDraft("");
-   const next=[...messages,{role:"you" as const,text}];
-   setMessages(next);
-   setBusy(true);
+   const requestId=++nextRequestId.current;
+   inFlight.current=true;
+   setBusy(true);setError("");setDraft("");
+   // A failed attempt stays visible, but retrying the identical last question
+   // replaces its failed bubble instead of recording a second copy.
+   const history=messages.slice(1)
+     .filter(m=>m.delivery!=="failed"&&m.delivery!=="pending")
+     .slice(-6)
+     .map(m=>({role:m.role==="you"?"user":"assistant",content:m.text}));
+   setMessages(previous=>{
+     const last=previous[previous.length-1];
+     const retry=last?.role==="you"&&last.delivery==="failed"&&last.text===text;
+     const pending:Message={role:"you",text,delivery:"pending",requestId};
+     return retry?[...previous.slice(0,-1),pending]:[...previous,pending];
+   });
    try{
      const token=await user.getIdToken();
-     const history=messages.slice(1).slice(-6).map(m=>({role:m.role==="you"?"user":"assistant",content:m.text}));
      const response=await fetch("/api/civic-assistant",{
        method:"POST",
        headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
-       body:JSON.stringify({message:text,history})
+       body:JSON.stringify({message:text,history}),
      });
      let payload:any={};
      try{payload=await response.json();}catch{}
      if(!response.ok)throw new Error(payload.error||"The AI service isn't available right now. Please try again later.");
-     if(!payload.reply)throw new Error("No response received. Please try again.");
-     setMessages(previous=>[...previous,{role:"ai",text:payload.reply}]);
+     if(typeof payload.reply!=="string"||!payload.reply.trim())throw new Error("No response received. Please try again.");
+     setMessages(previous=>[
+       ...previous.map(m=>m.requestId===requestId?{...m,delivery:"sent" as const}:m),
+       {role:"ai",text:payload.reply},
+     ]);
    }catch(e:any){
-     // Preserve the unanswered question for an intentional retry, rather than
-     // silently discarding it when the provider hits a quota or temporary limit.
+     setMessages(previous=>previous.map(m=>m.requestId===requestId?{...m,delivery:"failed" as const}:m));
+     // Do not erase a user's new draft if they typed while waiting.
      setDraft(previous=>previous.trim()?previous:text);
-     setError(e.message||"Unable to send your question.");
-   }finally{setBusy(false);}
+     setError(e?.message||"Unable to send your question.");
+   }finally{inFlight.current=false;setBusy(false);}
  };
  return <Shell title="Nagrik Civic AI" subtitle="Ask open-ended questions about civic life, public services, local problems, and practical community participation." eyebrow="COMMUNITY / AI ASSISTANT">
    <Card>
@@ -58,7 +75,7 @@ export default function CivicAIWeb(){
      </View>
      <ScrollView style={{maxHeight:450,backgroundColor:"#F8FAFD",borderRadius:16}} contentContainerStyle={{padding:15}}>
        {messages.map((item,index)=><View key={index} style={{backgroundColor:item.role==="you"?palette.navy:"#FFF",padding:15,alignSelf:item.role==="you"?"flex-end":"flex-start",maxWidth:"94%",marginBottom:12,borderRadius:15,borderWidth:item.role==="ai"?1:0,borderColor:palette.border}}>
-         <Text style={{color:item.role==="you"?"#FFC398":palette.orange,fontWeight:"800",fontSize:11,marginBottom:6}}>{item.role==="you"?"YOU":"NAGRIK CIVIC AI"}</Text>
+         <Text style={{color:item.role==="you"?"#FFC398":palette.orange,fontWeight:"800",fontSize:11,marginBottom:6}}>{item.role==="you"?(item.delivery==="failed"?"YOU · NOT ANSWERED":item.delivery==="pending"?"YOU · WAITING FOR AI":"YOU"):"NAGRIK CIVIC AI"}</Text>
          <Text style={{color:item.role==="you"?"#FFF":palette.ink,lineHeight:23}}>{item.text}</Text>
        </View>)}
        {busy?<Text style={{color:palette.muted,fontWeight:"700",padding:8}}>Nagrik AI is preparing a response…</Text>:null}
@@ -67,7 +84,7 @@ export default function CivicAIWeb(){
        <Field label="Ask anything related to civic life (up to 600 characters)" value={draft} onChangeText={setDraft} multiline placeholder="For example: How can I get my neighborhood to separate wet and dry waste?"/>
        <Notice text={error} error/>
        <Button label="Ask Nagrik AI" onPress={()=>send(draft)} busy={busy} disabled={!draft.trim()}/>
-       <View style={{marginTop:12}}><Button label="Start a new conversation" secondary onPress={()=>{setMessages(messages.slice(0,1));setError("");setDraft("");}}/></View>
+       <View style={{marginTop:12}}><Button label="Start a new conversation" secondary disabled={busy} onPress={()=>{setMessages(messages.slice(0,1));setError("");setDraft("");}}/></View>
      </View>
    </Card>
    <Card>
