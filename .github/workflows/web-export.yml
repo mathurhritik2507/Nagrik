@@ -19,6 +19,7 @@ jobs:
       - run: node scripts/test-weekly-rewards.cjs
       - run: node scripts/test-civic-api.cjs
       - run: node scripts/test-community.cjs
+      - run: npx tsc --project tsconfig.web.json --noEmit
       - run: npm run export:web
       - name: Check generated web entry
         run: test -f dist/index.html
