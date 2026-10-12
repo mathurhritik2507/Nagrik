@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /profile
+Disallow: /account-help
+Disallow: /forgot-password
+Disallow: /reports
+Disallow: /upload
+Disallow: /settings
+
+Sitemap: https://nagrik-eight.vercel.app/sitemap.xml

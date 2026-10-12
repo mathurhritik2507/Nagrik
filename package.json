@@ -9,7 +9,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "preexport:web": "node scripts/generate-pwa-icons.cjs",
+    "test:pwa": "node scripts/generate-pwa-icons.cjs && node scripts/test-pwa.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

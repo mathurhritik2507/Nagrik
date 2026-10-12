@@ -1,7 +1,7 @@
 name: Nagrik web export
 on:
   push:
-    branches: [main, feature/nagrik-web-v2-working-flows]
+    branches: [main, feature/nagrik-pwa, feature/nagrik-web-v2-working-flows]
   pull_request:
     branches: [main]
 jobs:
@@ -24,6 +24,8 @@ jobs:
       - run: node scripts/test-firestore-database-target.cjs
       - run: node scripts/test-account-help.cjs
       - run: npx tsc --project tsconfig.web.json --noEmit
+      - run: npm run test:pwa
       - run: npm run export:web
+      - run: node scripts/test-pwa.cjs
       - name: Check generated web entry
         run: test -f dist/index.html

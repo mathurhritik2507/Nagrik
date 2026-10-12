@@ -39,7 +39,14 @@
       "expo-notifications"
     ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Nagrik - India's Civic Action Platform",
+      "shortName": "Nagrik",
+      "lang": "en-IN",
+      "themeColor": "#FF6B00",
+      "backgroundColor": "#F4F7FB",
+      "description": "Free civic guide, community activities and responsible local civic participation.",
+      "output": "single"
     },
     "extra": {
       "router": {},

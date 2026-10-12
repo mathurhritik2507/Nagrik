@@ -1,7 +1,7 @@
 name: Nagrik browser smoke
 on:
   push:
-    branches: [feature/nagrik-web-v2-working-flows]
+    branches: [main, feature/nagrik-pwa, feature/nagrik-web-v2-working-flows]
   workflow_dispatch:
 jobs:
   browser-smoke:
@@ -15,6 +15,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run export:web
+      - run: node scripts/test-pwa.cjs
       - run: npm install --no-save playwright-core
       - name: Serve exported website
         run: |

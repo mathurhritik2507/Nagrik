@@ -62,6 +62,7 @@ export default function GuestDemo(){
        <View style={{gap:10}}>
          <Button label="Create a free Nagrik account" onPress={()=>router.push("/signup")}/>
          <Button label="Already registered? Sign in" secondary onPress={()=>router.push("/login")}/>
+         <Button label="Install Nagrik on your phone" secondary onPress={()=>router.push("/install" as any)}/>
        </View>
      </Card>
    </View>
