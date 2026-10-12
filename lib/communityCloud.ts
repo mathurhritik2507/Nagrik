@@ -7,7 +7,7 @@
  */
 import { auth, db } from "../firebaseConfig";
 import {
-  addDoc, collection, deleteDoc, doc, getDoc, limit,
+  addDoc, collection, deleteDoc, doc, getDocsFromServer, limit,
   onSnapshot, orderBy, query, serverTimestamp, setDoc,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -54,6 +54,29 @@ export async function publishCommunityPost(input:{text:string;city:string;catego
     moderation:"unverified",
   });
 }
+export type CommunityConnectionStatus =
+  | {kind:"connected";message:string}
+  | {kind:"unauthenticated"|"permission-denied"|"timeout"|"offline"|"error";message:string};
+
+/** Check the server, not just locally cached documents. */
+export async function checkCommunityConnection(timeoutMs=12000):Promise<CommunityConnectionStatus>{
+  const u=auth.currentUser;
+  if(!u)return {kind:"unauthenticated",message:"Sign in to test the community database."};
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{
+    await u.getIdToken();
+    const read=getDocsFromServer(query(collection(db,"communityPosts"),limit(1)));
+    await Promise.race([read,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error("check-timed-out")),timeoutMs);})]);
+    return {kind:"connected",message:"Firestore server reachable. Community posts can be read."};
+  }catch(e:any){
+    const code=e?.code||"unknown";
+    if(e?.message==="check-timed-out")return {kind:"timeout",message:"Firestore server did not respond within "+Math.round(timeoutMs/1000)+" seconds. Try disabling VPN, ad-blockers or browser privacy extensions and allow firestore.googleapis.com."};
+    if(code==="permission-denied")return {kind:"permission-denied",message:"Firestore denied the server read. Check signed-in status and published community security rules."};
+    if(code==="unavailable"||code==="deadline-exceeded")return {kind:"offline",message:"Firestore is unreachable. Check your internet connection or browser/network restrictions."};
+    return {kind:"error",message:"Firestore request failed ("+code+"). Inspect the browser Network panel for firestore.googleapis.com."};
+  }finally{if(timer)clearTimeout(timer);}
+}
+
 export function communitySyncState(hasPendingWrites:boolean,fromCache:boolean):NonNullable<CommunityPost["syncState"]>{
   if(hasPendingWrites)return "pending";
   return fromCache?"cached":"confirmed";
