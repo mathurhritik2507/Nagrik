@@ -11,7 +11,37 @@ const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 12;
 const FIREBASE_PUBLIC_WEB_KEY = "AIzaSyCX0Vkq75s7D2ag0oQt_JRf-bjfnhQ_7DM";
 
-function reply(res,status,message){return res.status(status).json({error:message});}
+function reply(res,status,message,code){
+ return res.status(status).json(code?{error:message,code}:{error:message});
+}
+
+/** Distinguish provider credit/spend exhaustion from a temporary 429 rate limit.
+ * Only return stable error labels to the browser, never the provider error body.
+ */
+function classifyProviderError(status,raw){
+ const error=raw&&typeof raw==="object"&&raw.error&&typeof raw.error==="object"?raw.error:{};
+ const code=typeof error.code==="string"?error.code:"";
+ const type=typeof error.type==="string"?error.type:"";
+ const quotaCodes=new Set([
+   "insufficient_quota","credit_balance_exhausted",
+   "organization_usage_limit_exceeded","organization_spend_limit_exceeded",
+   "project_spend_limit_exceeded","billing_hard_limit_reached",
+ ]);
+ if(status===429){
+   if(quotaCodes.has(code)||quotaCodes.has(type))return {
+     httpStatus:503,code:"AI_QUOTA_EXHAUSTED",
+     message:"Nagrik Civic AI is temporarily unavailable because its API credit or spending limit has been reached. The app owner must check API billing."
+   };
+   return {httpStatus:429,code:"AI_RATE_LIMITED",
+     message:"Nagrik Civic AI has hit a temporary API rate limit. Please wait a minute before trying again."};
+ }
+ if(status===401||status===403)return {httpStatus:503,code:"AI_PROVIDER_AUTH",
+   message:"The Civic AI provider configuration needs attention from the Nagrik owner."};
+ if(status===404||status===400)return {httpStatus:503,code:"AI_PROVIDER_CONFIGURATION",
+   message:"The Civic AI model or provider configuration needs attention from the Nagrik owner."};
+ return {httpStatus:502,code:"AI_PROVIDER_UNAVAILABLE",
+   message:"The AI provider is unavailable right now. Please try again later."};
+}
 function normalizeHistory(raw){
  if(!Array.isArray(raw))return [];
  return raw.slice(-6).filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string")
@@ -28,7 +58,7 @@ module.exports = async function handler(req,res){
  res.setHeader("X-Content-Type-Options","nosniff");
  if(req.method!=="POST"){res.setHeader("Allow","POST");return reply(res,405,"Only POST requests are supported.");}
  if(!process.env.OPENAI_API_KEY){
-   return reply(res,503,"AI civic assistant is not configured yet. The owner must add OPENAI_API_KEY to Vercel.");
+   return reply(res,503,"AI civic assistant is not configured yet. The owner must add OPENAI_API_KEY to Vercel.","AI_NOT_CONFIGURED");
  }
  const authorization=String(req.headers.authorization||"");
  if(!authorization.startsWith("Bearer "))return reply(res,401,"Sign in to use the civic assistant.");
@@ -73,7 +103,19 @@ For unrelated requests, politely steer back to civic topics. Keep answers concis
      body:JSON.stringify({model:process.env.OPENAI_MODEL||"gpt-4o-mini",messages,max_completion_tokens:420,store:false})
    },18000);
    if(!result.ok){
-     return reply(res,502,result.status===429?"AI is busy or the API budget is exhausted. Please try later.":"The AI provider is unavailable right now. Please try again.");
+     let providerError={};
+     try{providerError=await result.json();}catch{}
+     const category=classifyProviderError(result.status,providerError);
+     // Log only non-sensitive diagnostics: never API keys, bearer tokens,
+     // user prompts or unfiltered upstream messages.
+     const p=providerError?.error||{};
+     const upstreamCode=typeof p.code==="string"?p.code.slice(0,70):"unknown";
+     const upstreamType=typeof p.type==="string"?p.type.slice(0,70):"unknown";
+     console.warn("nagrik_civic_ai_upstream_error",{
+       httpStatus:result.status,category:category.code,
+       upstreamCode,upstreamType,
+     });
+     return reply(res,category.httpStatus,category.message,category.code);
    }
    const payload=await result.json();
    const answer=payload.choices?.[0]?.message?.content;
