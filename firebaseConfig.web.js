@@ -1,7 +1,7 @@
 // Browser-specific Firebase Auth initialization. Native config remains unchanged.
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCX0Vkq75s7D2ag0oQt_JRf-bjfnhQ_7DM",
@@ -13,5 +13,10 @@ const firebaseConfig = {
   measurementId: "G-T5RTHM3L3K",
 };
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// Web-only transport workaround for proxies/extensions that buffer Firestore
+// WebChannel streaming requests. Auth and the native Firebase SDK are unchanged.
+// This can add latency; evaluate in the preview before public production rollout.
+export const db = initializeFirestore(app,{
+  experimentalForceLongPolling:true,
+});
 export const auth = getAuth(app);
