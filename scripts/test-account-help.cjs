@@ -5,7 +5,7 @@ const ts=require("typescript");
 const source=fs.readFileSync("lib/useAccountHelp.ts","utf8");
 const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
 const exports={};
-vm.runInNewContext(js,{exports,require(name){
+vm.runInNewContext(js,{exports,Error,require(name){
  if(name==="react")return {};
  if(name==="firebase/auth")return {};
  if(name==="../firebaseConfig")return {auth:{currentUser:null}};
