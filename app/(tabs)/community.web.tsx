@@ -28,10 +28,27 @@ export default function CommunityFeed(){
    const user=auth.currentUser;if(!user)return;
    setVerifyBusy(true);setError("");setSuccess("");
    try{
-     if(send){await sendEmailVerification(user);setSuccess("Verification email requested. Check your inbox and spam folder.");}
-     else{await reload(user);await user.getIdToken(true);setVerified(user.emailVerified);
-       setSuccess(user.emailVerified?"Your email is verified. You can publish.":"Your email isn't verified yet. Open the link in the email, then try again.");}
-   }catch(e:any){setError(e.code==="auth/too-many-requests"?"Please wait before requesting another email.":e.message||"Unable to verify email.");}
+     if(send){
+       if(user.emailVerified){setVerified(true);setSuccess("Your email is already verified.");return;}
+       await sendEmailVerification(user);
+       setSuccess("Firebase accepted a verification-email request for your sign-in address. Delivery is not guaranteed: check spam, Promotions, and your Firebase Authentication email settings.");
+     }else{
+       await reload(user);
+       await user.getIdToken(true);
+       setVerified(user.emailVerified);
+       setSuccess(user.emailVerified?"Your email is verified. You can publish.":"Firebase still marks your account as unverified. Confirm you opened the verification link for this same account.");
+     }
+   }catch(e:any){
+     const code=e?.code||"unknown";
+     const messages:Record<string,string>={
+       "auth/too-many-requests":"Firebase has temporarily rate-limited these requests. Please wait before trying again.",
+       "auth/network-request-failed":"Cannot reach Firebase. Check your internet connection.",
+       "auth/unauthorized-domain":"This app domain is not authorized in Firebase Authentication settings.",
+       "auth/invalid-user-token":"Your session has expired. Sign out and sign in again.",
+       "auth/user-token-expired":"Your session has expired. Sign out and sign in again.",
+     };
+     setError((messages[code]||"Firebase rejected the email operation.")+" ("+code+")");
+   }
    finally{setVerifyBusy(false);}
  };
  const publish=async()=>{
@@ -74,6 +91,8 @@ export default function CommunityFeed(){
    <Heading muted="Posting is optional. Only publish information you want other signed-in members to see.">Share a civic contribution</Heading>
    {!verified?<View style={{marginBottom:15}}>
      <Notice error text="For community safety, verified email is required before sharing a public post."/>
+     <Text style={{color:palette.ink,fontWeight:"700",marginBottom:8}}>Firebase sign-in address: {auth.currentUser?.email||"Unavailable"}</Text>
+     <Text style={{color:palette.muted,fontSize:12,lineHeight:19,marginBottom:12}}>Verification is sent to this address, not necessarily the email shown in an older profile. Sending a request does not confirm inbox delivery.</Text>
      <View style={{flexDirection:"row",flexWrap:"wrap",gap:8}}>
        <Button secondary busy={verifyBusy} label="Send verification email" onPress={()=>emailAction(true)}/>
        <Button secondary busy={verifyBusy} label="I've verified — check again" onPress={()=>emailAction(false)}/>
