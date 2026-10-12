@@ -44,7 +44,7 @@ export default function WebSignup(){
          <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name"/>
          <Field label="City" value={city} onChangeText={setCity} placeholder="Your city"/>
          <Field label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com"/>
-         <Field label="Password (minimum 8 characters)" value={password} onChangeText={setPassword} placeholder="Choose a password"/>
+         <Field label="Password (minimum 8 characters)" secure value={password} onChangeText={setPassword} placeholder="Choose a password"/>
          <Notice text={error} error/>
          <Button label="Create account" busy={busy} onPress={submit}/>
          <View style={{marginTop:12}}><Button label="Already registered? Sign in →" secondary onPress={()=>router.push("/login")}/></View>
