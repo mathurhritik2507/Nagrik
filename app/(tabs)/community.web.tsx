@@ -3,7 +3,7 @@ import {Pressable,Text,View} from "react-native";
 import {router} from "expo-router";
 import {reload,sendEmailVerification} from "firebase/auth";
 import {auth} from "../../firebaseConfig";
-import {categories,CommunityPost,communityRanking,publishCommunityPost,subscribeCommunityPosts} from "../../lib/communityCloud";
+import {categories,CommunityPost,CommunityConnectionStatus,checkCommunityConnection,communityRanking,publishCommunityPost,subscribeCommunityPosts} from "../../lib/communityCloud";
 import {useCivicData} from "../../lib/webCivicStore";
 import {CommunityPostCard} from "../../components/web/CommunityPostCard";
 import {Button,Card,Chip,Empty,Field,Heading,Hero,Notice,Shell,palette} from "../../components/web/Kit";
@@ -25,12 +25,20 @@ export default function CommunityFeed(){
  const [busy,setBusy]=useState(false);
  const [verified,setVerified]=useState(auth.currentUser?.emailVerified===true);
  const [verifyBusy,setVerifyBusy]=useState(false);
+ const [connection,setConnection]=useState<CommunityConnectionStatus | {kind:"checking";message:string}>({kind:"checking",message:"Testing a real Firestore server connection…"});
+ const [checking,setChecking]=useState(false);
+ const runConnectionCheck=async()=>{
+   setChecking(true);setConnection({kind:"checking",message:"Testing a real Firestore server connection…"});
+   try{setConnection(await checkCommunityConnection());}
+   finally{setChecking(false);}
+ };
  useEffect(()=>{
    const sub=subscribeCommunityPosts(items=>{setPosts(items);setFeedError("");setLoading(false);},
      msg=>{setFeedError(msg);setLoading(false);},50);
    return sub;
  },[]);
  useEffect(()=>()=>{if(confirmationTimer.current)clearTimeout(confirmationTimer.current);},[]);
+ useEffect(()=>{void runConnectionCheck();},[]);
  useEffect(()=>{if(data.profile.city&&city==="Pune")setCity(data.profile.city);},[data.profile.city]);
  const emailAction=async(send:boolean)=>{
    const user=auth.currentUser;if(!user)return;
@@ -69,6 +77,10 @@ export default function CommunityFeed(){
      setError("Write a contribution between 20 and 650 characters.");return;
    }
    if(!verified){setError("Verify your Firebase email before publishing.");return;}
+   if(connection.kind!=="connected"){
+     setError("The app has not confirmed a Firestore server connection. Use ‘Recheck connection’ below; do not submit another post until the database is reachable.");
+     return;
+   }
    publishingRef.current=true;
    setBusy(true);setWaitingForServer(false);
    confirmationTimer.current=setTimeout(()=>{
@@ -123,6 +135,12 @@ export default function CommunityFeed(){
     </View>
   </Card>:null}
   <Card>
+   <Heading muted="A post appearing locally does not mean it reached Firebase. This test contacts the server directly.">Firestore connection</Heading>
+   <Notice text={connection.message} error={connection.kind!=="connected"&&connection.kind!=="checking"}/>
+   <View style={{marginTop:12}}><Button label="Recheck Firestore connection" secondary busy={checking} onPress={runConnectionCheck}/></View>
+   <Text style={{color:palette.muted,marginTop:10,fontSize:12,lineHeight:19}}>If this check times out, disable browser extensions or VPN temporarily and try again. Do not submit the same post twice.</Text>
+  </Card>
+  <Card>
    <Heading muted="Posting is optional. Only publish information you want other signed-in members to see.">Share a civic contribution</Heading>
    {!verified?<View style={{marginBottom:15}}>
      <Notice error text="For community safety, verified email is required before sharing a public post."/>
@@ -144,7 +162,7 @@ export default function CommunityFeed(){
      <Text style={{color:palette.ink,flex:1,lineHeight:22,fontSize:13}}>I agree to publish my name, city and this message to other signed-in Nagrik members. I will not include phone numbers, private addresses, pictures of strangers or sensitive information.</Text>
    </Pressable>
    <Notice text={error} error/><Notice text={success}/>
-   <Button label={waitingForServer?"Awaiting Firebase confirmation — do not resubmit":"Publish to community feed"} disabled={!verified||!consent||content.trim().length<20||busy} busy={busy&&!waitingForServer} onPress={publish}/>
+   <Button label={waitingForServer?"Awaiting Firebase confirmation — do not resubmit":"Publish to community feed"} disabled={!verified||!consent||content.trim().length<20||busy||connection.kind!=="connected"} busy={busy&&!waitingForServer} onPress={publish}/>
    <Text style={{color:palette.muted,fontSize:12,marginTop:12,lineHeight:19}}>Public feed posts are text-only in this version. Your separately saved issue reports, challenge proof photos and private actions are not automatically published.</Text>
   </Card>
   <Heading muted="Latest self-reported activity from signed-in community members.">Latest contributions</Heading>
