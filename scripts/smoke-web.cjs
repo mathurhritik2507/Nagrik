@@ -13,7 +13,7 @@ const fs=require("node:fs");
   page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE ERROR "+m.text())});
   page.on("requestfailed",r=>errors.push("REQUEST FAILED "+r.url()+" "+r.failure()?.errorText));
   const origin="http://127.0.0.1:3000";
-  for (const path of ["/login","/demo","/forgot-password","/account-help","/","/community"]){
+  for (const path of ["/login","/demo","/install","/forgot-password","/account-help","/","/community"]){
     console.log("CHECK",path);
     errors.length=0;
     await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:30000});
@@ -22,7 +22,7 @@ const fs=require("node:fs");
     console.log("URL",page.url());
     console.log("BODY",JSON.stringify(text));
     console.log("JS_ERRORS",JSON.stringify(errors.slice(0,12)));
-    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/demo"?"demo":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
+    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/demo"?"demo":path==="/install"?"install":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
     if(text.trim().length<12)throw Error("Blank screen at "+path+"; errors: "+errors.join("; "));
     if(path==="/login")assert.match(text,/Welcome back|Sign in|Nagrik/i,"Login screen missing");
     if(path==="/demo"){
@@ -32,6 +32,23 @@ const fs=require("node:fs");
       await page.getByText("Potholes and damaged roads",{exact:false}).first().waitFor({timeout:8000});
       assert.equal(aiApiCalls.length,0,"Guest guide must not call the AI API");
       console.log("GUEST_GUIDE_INTERACTION_PASSED");
+    }
+    if(path==="/install"){
+      assert.match(text,/Nagrik on your home screen/i,"Install page missing");
+      assert.match(text,/Android|Safari/i,"Install instructions missing");
+      const manifest=await page.request.get(origin+"/manifest.json");
+      assert.equal(manifest.status(),200,"Manifest must be served directly");
+      const payload=await manifest.json();
+      assert.equal(payload.display,"standalone");
+      assert.equal(payload.start_url,"/demo");
+      for(const px of [192,512]){
+        const icon=await page.request.get(origin+`/icon-${px}.png`);
+        assert.equal(icon.status(),200,"Missing icon "+px);
+        const data=await icon.body();
+        assert.equal(data.readUInt32BE(16),px);
+        assert.equal(data.readUInt32BE(20),px);
+      }
+      console.log("PWA_INSTALL_CHECK_PASSED");
     }
     if(path==="/forgot-password")assert.match(text,/Reset your password|Send reset email/i,"Password reset screen missing");
     if(errors.some(e=>e.startsWith("PAGE ERROR")))throw Error("Runtime exception at "+path+": "+errors.join("; "));
