@@ -101,6 +101,39 @@ export async function checkCommunityConnection(timeoutMs=12000):Promise<Communit
   }finally{if(timer)clearTimeout(timer);}
 }
 
+/**
+ * Independent HTTPS diagnostic: Firestore REST does not use the SDK WebChannel
+ * streaming transport. Uses the CURRENT Firebase user's ID token, so Firestore
+ * Security Rules still apply. Never show/log the token or response body.
+ */
+export async function checkCommunityRestConnection(timeoutMs=12000):Promise<CommunityConnectionStatus>{
+  const user=auth.currentUser;
+  if(!user)return {kind:"unauthenticated",message:"Sign in to test Firestore REST access."};
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const projectId=db.app.options.projectId;
+    if(!projectId)return {kind:"error",message:"Firebase project ID is missing from web configuration."};
+    const token=await user.getIdToken();
+    const url="https://firestore.googleapis.com/v1/projects/"+
+      encodeURIComponent(projectId)+"/databases/(default)/documents/communityPosts?pageSize=1";
+    const response=await fetch(url,{
+      method:"GET",
+      headers:{Authorization:"Bearer "+token},
+      cache:"no-store",
+      signal:controller.signal,
+    });
+    if(response.ok)return {kind:"connected",message:"Firestore REST HTTPS API responded successfully (HTTP "+response.status+"). Database and authenticated read permission are working."};
+    if(response.status===401||response.status===403)return {kind:"permission-denied",message:"Firestore REST returned HTTP "+response.status+". Check Firebase ID token, security rules, API restrictions, and project configuration."};
+    if(response.status===404)return {kind:"error",message:"Firestore REST returned HTTP 404. Verify the configured Firebase project ID and Firestore database."};
+    if(response.status===429)return {kind:"error",message:"Firestore REST returned HTTP 429. Check API quotas and rate limits."};
+    return {kind:"error",message:"Firestore REST returned HTTP "+response.status+". Check Firestore API/project status."};
+  }catch(e:any){
+    if(e?.name==="AbortError")return {kind:"timeout",message:"Firestore REST HTTPS request timed out. Try another browser/network or disable VPN/extensions temporarily."};
+    return {kind:"offline",message:"Firestore REST HTTPS could not complete a network request. Inspect network access to firestore.googleapis.com. No credentials are shown here."};
+  }finally{clearTimeout(timeout);}
+}
+
 export function communitySyncState(hasPendingWrites:boolean,fromCache:boolean):NonNullable<CommunityPost["syncState"]>{
   if(hasPendingWrites)return "pending";
   return fromCache?"cached":"confirmed";
