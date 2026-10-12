@@ -1,4 +1,5 @@
 import React from "react";
+import CommunityPreview from "../../components/web/CommunityPreview";
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { auth } from "../../firebaseConfig";
@@ -26,7 +27,8 @@ export default function WebHome(){
       <Metric label="Challenge proofs" value={data.proofs.length}/>
       <Metric label="Practice XP" value={points}/>
     </View>
-    <Heading muted="Your saved activity, not fabricated neighborhood statistics.">Recent activity</Heading>
+    <CommunityPreview/>
+    <Heading muted="Your privately saved activity from this browser.">My recent activity</Heading>
     <Card>
       {recent.length===0?<Empty text="No activity yet. Record your first action or report to populate this dashboard."/>:
       recent.map((item,i)=><View key={item.id} style={{paddingVertical:12,borderBottomWidth:i===recent.length-1?0:1,borderColor:palette.border}}>
@@ -37,9 +39,11 @@ export default function WebHome(){
     <Heading>Explore your civic toolkit</Heading>
     <View style={{flexDirection:"row",flexWrap:"wrap",gap:12}}>
       {[
+        {name:"📰 Community feed",desc:"Discover contributions from verified members and join the discussion.",to:"/community"},
+        {name:"🏆 Leaderboard",desc:"Explore weekly highlighted contributors and rankings.",to:"/leaderboard"},
         {name:"🎯 Civic challenges",desc:"Submit challenge proof and track progress.",to:"/challenges"},
         {name:"📍 Civic insights",desc:"Explore trends in your locally saved reports.",to:"/impact"},
-        {name:"💬 Civic guide",desc:"Get rule-based civic guidance and suggestions.",to:"/assistant"},
+        {name:"💬 Civic guide",desc:"Ask open-ended civic questions using Nagrik AI (when configured).",to:"/assistant"},
         {name:"👤 Your profile",desc:"View your civic history and update your details.",to:"/profile"},
       ].map(a=><Pressable key={a.to} accessibilityRole="button" onPress={()=>router.push(a.to as any)} style={({pressed})=>({width:"48%",minWidth:260,flexGrow:1,backgroundColor:"#FFF",padding:22,borderWidth:1,borderColor:palette.border,borderRadius:18,opacity:pressed?.75:1})}>
         <Text style={{fontSize:17,fontWeight:"800",color:palette.ink}}>{a.name}</Text>
