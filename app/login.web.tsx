@@ -40,7 +40,7 @@ export default function WebLogin(){
        <Text style={{color:palette.muted,marginBottom:17}}>Sign in to your Nagrik account.</Text>
        <Card>
          <Field label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com"/>
-         <Field label="Password" value={password} onChangeText={setPassword} placeholder="Your password"/>
+         <Field label="Password" secure value={password} onChangeText={setPassword} placeholder="Your password"/>
          <Notice text={error} error/>
          <Button label="Sign in" onPress={submit} busy={busy}/>
          <View style={{marginTop:13}}><Button label="New here? Create account →" secondary onPress={()=>router.push("/signup")}/></View>
