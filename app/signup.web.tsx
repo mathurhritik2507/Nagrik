@@ -1,7 +1,7 @@
 import React,{useState} from "react";
 import {Text,View,useWindowDimensions} from "react-native";
 import {router} from "expo-router";
-import {createUserWithEmailAndPassword,updateProfile} from "firebase/auth";
+import {createUserWithEmailAndPassword,updateProfile,sendEmailVerification} from "firebase/auth";
 import {auth} from "../firebaseConfig";
 import {Button,Card,Field,Notice,palette} from "../components/web/Kit";
 const messages:Record<string,string>={
@@ -23,7 +23,10 @@ export default function WebSignup(){
   setBusy(true);
   try{
    const result=await createUserWithEmailAndPassword(auth,email.trim(),password);
-   await updateProfile(result.user,{displayName:name.trim()});
+   await updateProfile(result.user,{displayName:name.trim().slice(0,60)});
+   // Registration succeeds even if Firebase cannot deliver the email right now.
+   // The Feed includes a resend and verification-status control.
+   try{await sendEmailVerification(result.user);}catch{}
    router.replace("/");
   }catch(e:any){setError(messages[e?.code]||`Registration failed (${e?.code||"unknown"}).`);}
   finally{setBusy(false);}
@@ -34,7 +37,7 @@ export default function WebSignup(){
        <Text style={{fontWeight:"900",fontSize:35,color:"#FFF"}}>nagrik<Text style={{color:palette.orange}}>.</Text></Text>
        <Text style={{color:"#FFB980",letterSpacing:1.5,fontSize:12,fontWeight:"800",marginTop:22}}>JOIN THE COMMUNITY</Text>
        <Text style={{fontSize:wide?30:22,fontWeight:"900",color:"#FFF",marginTop:10,lineHeight:wide?40:31}}>Your next civic action starts here.</Text>
-       <Text style={{color:"#CBDAE8",marginTop:14,lineHeight:23}}>Create an account to keep a personal record of civic activities and neighborhood concerns.</Text>
+       <Text style={{color:"#CBDAE8",marginTop:14,lineHeight:23}}>Create an account for private civic tracking. Verify your email to participate in the shared community feed.</Text>
        <Text style={{fontSize:12,color:"#CBDAE8",marginTop:24}}>Beta records are local to this browser. Avoid submitting sensitive personal information.</Text>
      </View>
      <View style={{flex:wide?1:undefined,width:wide?"48%":"100%"}}>
