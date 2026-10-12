@@ -40,6 +40,11 @@ export default function WebProfile(){
      </View>
    </Card>
    <Card>
+     <Heading>Account & verification</Heading>
+     <Text style={{color:palette.muted,lineHeight:22,marginBottom:12}}>Check your exact Firebase sign-in address, resend verification, change your password without email delivery, or request a secure email address change.</Text>
+     <Button label="Open account help" secondary onPress={()=>router.push("/account-help")}/>
+   </Card>
+   <Card>
      <Heading>Manage your local data</Heading>
      <Text style={{color:palette.muted,lineHeight:21,marginBottom:13}}>Back up your records or erase them from this browser. Clearing the data cannot be undone.</Text>
      <View style={{flexDirection:"row",gap:10,flexWrap:"wrap"}}>
