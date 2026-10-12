@@ -44,6 +44,7 @@ export default function WebLogin(){
          <Notice text={error} error/>
          <Button label="Sign in" onPress={submit} busy={busy}/>
          <View style={{marginTop:12}}><Button label="Forgot password?" secondary onPress={()=>router.push("/forgot-password")}/></View>
+         <View style={{marginTop:12}}><Button label="Account & email help" secondary onPress={()=>router.push("/account-help")}/></View>
          <View style={{marginTop:13}}><Button label="New here? Create account →" secondary onPress={()=>router.push("/signup")}/></View>
        </Card>
      </View>
