@@ -15,7 +15,7 @@ export default function WebHome(){
     ...data.proofs.map(v=>({...v,label:"Challenge submission",summary:v.description})),
   ].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
   return <Shell title={`Welcome back, ${name} 👋`} subtitle="Your personal civic workspace. Small actions add up — and every submission should be visible and traceable.">
-    <Hero kicker="NAGRIK / PUBLIC BETA" title="Make your neighborhood better." description="Record an action, document an issue, or complete a civic challenge. This beta keeps your records privately in this browser.">
+    <Hero kicker="NAGRIK / PUBLIC BETA" title="Make your neighborhood better." description="Record a private action, document a neighborhood concern, or explore real community contributions. Your public posts require an explicit opt-in.">
       <View style={{flexDirection:"row",flexWrap:"wrap",marginTop:20,gap:10}}>
         <Button label="Record a civic action ↗" onPress={()=>router.push("/explore")}/>
         <Button label="Report an issue ↗" secondary onPress={()=>router.push("/report")}/>
