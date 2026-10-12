@@ -46,6 +46,7 @@ export default function WebLogin(){
          <View style={{marginTop:12}}><Button label="Forgot password?" secondary onPress={()=>router.push("/forgot-password")}/></View>
          <View style={{marginTop:12}}><Button label="Account & email help" secondary onPress={()=>router.push("/account-help")}/></View>
          <View style={{marginTop:13}}><Button label="New here? Create account →" secondary onPress={()=>router.push("/signup")}/></View>
+         <View style={{marginTop:13}}><Button label="Try free guest demo (no signup)" secondary onPress={()=>router.push("/demo" as any)}/></View>
        </Card>
      </View>
    </View>
