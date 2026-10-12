@@ -21,6 +21,7 @@ export type CommunityPost = {
   text:string;
   createdAt?:{seconds:number};
   moderation:"unverified";
+  syncState?:"pending"|"cached"|"confirmed";
 };
 export type CommunityComment = {
   id:string;
@@ -54,10 +55,17 @@ export async function publishCommunityPost(input:{text:string;city:string;catego
   });
 }
 export function subscribeCommunityPosts(onData:(items:CommunityPost[])=>void,onError:(message:string)=>void,max=40):Unsubscribe{
+  // Firestore applies local writes optimistically. Include metadata changes so
+  // the feed can distinguish pending, cached and server-confirmed documents.
   return onSnapshot(query(collection(db,"communityPosts"),orderBy("createdAt","desc"),limit(max)),
-    snap=>onData(snap.docs.map(d=>({id:d.id,...d.data()} as CommunityPost))),
+    {includeMetadataChanges:true},
+    snap=>onData(snap.docs.map(d=>({
+      id:d.id,
+      ...d.data(),
+      syncState:d.metadata.hasPendingWrites?"pending":snap.metadata.fromCache?"cached":"confirmed",
+    } as CommunityPost))),
     err=>onError(err.code==="permission-denied"?
-      "The community database isn't enabled for this preview yet. Firestore rules must be deployed.":"Unable to load the community feed. "+err.message));
+      "Firestore denied feed access. Check email verification, authentication and the published security rules.":"Unable to load the community feed: "+(err.code||err.message)));
 }
 export async function deleteCommunityPost(item:CommunityPost){
   const u=currentUser();
@@ -106,6 +114,7 @@ export function communityRanking(posts:CommunityPost[],now=new Date()){
   weekStart.setUTCDate(weekStart.getUTCDate()-((weekStart.getUTCDay()+6)%7));
   const scores=new Map<string,{uid:string;name:string;city:string;count:number}>();
   for(const post of posts){
+    if(post.syncState==="pending"||post.syncState==="cached")continue;
     if(!post.createdAt||post.createdAt.seconds*1000<weekStart.getTime())continue;
     const v=scores.get(post.authorUid)||{uid:post.authorUid,name:post.authorName,city:post.city,count:0};
     v.count+=1;
