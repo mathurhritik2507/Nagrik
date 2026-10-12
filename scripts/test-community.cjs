@@ -15,7 +15,14 @@ vm.runInNewContext(transpiled,{
  },
  Map,Date,Set,Math,Array,String,Object
 });
-const {communityRanking,communitySyncState,categories}=moduleExports;
+const {communityRanking,communitySyncState,communitySubmissionId,categories}=moduleExports;
+const uid="user_1",day="2026-10-12";
+const id=communitySubmissionId(uid,"Cleanliness","Pune","A meaningful cleanup contribution",day);
+assert.equal(id,communitySubmissionId(uid,"Cleanliness","Pune","A meaningful cleanup contribution",day));
+assert.notEqual(id,communitySubmissionId(uid,"Cleanliness","Pune","A different cleanup contribution",day));
+assert.notEqual(id,communitySubmissionId("user_2","Cleanliness","Pune","A meaningful cleanup contribution",day));
+assert.notEqual(id,communitySubmissionId(uid,"Cleanliness","Pune","A meaningful cleanup contribution","2026-10-13"));
+assert.match(id,/^p_[a-z0-9]+$/);
 assert.equal(communitySyncState(true,false),"pending");
 assert.equal(communitySyncState(true,true),"pending");
 assert.equal(communitySyncState(false,true),"cached");
