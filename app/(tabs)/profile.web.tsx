@@ -7,7 +7,7 @@ import {useCivicData} from "../../lib/webCivicStore";
 import {Shell,Hero,Card,Field,Heading,Button,Notice,Metric,palette} from "../../components/web/Kit";
 
 export default function WebProfile(){
- const {data,saveProfile,points}=useCivicData();
+ const {data,saveProfile,points,clearLocalRecords,downloadRecords}=useCivicData();
  const user=auth.currentUser;
  const [city,setCity]=useState(data.profile.city);
  const [bio,setBio]=useState(data.profile.bio);
@@ -37,6 +37,18 @@ export default function WebProfile(){
      <View style={{flexDirection:"row",flexWrap:"wrap",gap:10}}>
        <Button label="Save profile" onPress={save}/>
        <Button label="Sign out" secondary busy={loggingOut} onPress={logout}/>
+     </View>
+   </Card>
+   <Card>
+     <Heading>Manage your local data</Heading>
+     <Text style={{color:palette.muted,lineHeight:21,marginBottom:13}}>Back up your records or erase them from this browser. Clearing the data cannot be undone.</Text>
+     <View style={{flexDirection:"row",gap:10,flexWrap:"wrap"}}>
+       <Button label="Export my records (JSON)" secondary onPress={downloadRecords}/>
+       <Button label="Delete all local records" secondary onPress={()=>{
+         if(window.confirm("Delete all locally saved actions, reports, proofs and profile details? This cannot be undone.")){
+           clearLocalRecords();setMessage("All Nagrik beta records were erased from this browser.");setError(false);
+         }
+       }}/>
      </View>
    </Card>
    <Card>
