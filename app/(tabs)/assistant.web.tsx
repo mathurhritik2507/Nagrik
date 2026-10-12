@@ -43,6 +43,9 @@ export default function CivicAIWeb(){
      if(!payload.reply)throw new Error("No response received. Please try again.");
      setMessages(previous=>[...previous,{role:"ai",text:payload.reply}]);
    }catch(e:any){
+     // Preserve the unanswered question for an intentional retry, rather than
+     // silently discarding it when the provider hits a quota or temporary limit.
+     setDraft(previous=>previous.trim()?previous:text);
      setError(e.message||"Unable to send your question.");
    }finally{setBusy(false);}
  };
