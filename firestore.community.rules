@@ -1,0 +1,94 @@
+// Candidate rules for Nagrik's NEW community collections.
+// BEFORE APPLYING: merge these matches into your CURRENT Firestore rules.
+// Do not blindly replace existing rules; that may break older mobile features.
+// Publishing is allowed only for verified-email Firebase users. Shared text
+// remains UNVERIFIED; moderation and anti-spam still require production work.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function validPost() {
+      return request.resource.data.keys().hasOnly([
+          'authorUid','authorName','city','category','text','createdAt','moderation'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'authorUid','authorName','city','category','text','createdAt','moderation'
+        ]) &&
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.authorName is string &&
+        request.resource.data.authorName.size() >= 1 &&
+        request.resource.data.authorName.size() <= 60 &&
+        request.resource.data.city is string &&
+        request.resource.data.city.size() >= 2 &&
+        request.resource.data.city.size() <= 65 &&
+        request.resource.data.category in [
+          'Cleanliness','Environment','Accessibility','Volunteering',
+          'Community','Civic learning','Other'
+        ] &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() >= 20 &&
+        request.resource.data.text.size() <= 650 &&
+        request.resource.data.moderation == 'unverified' &&
+        request.resource.data.createdAt == request.time;
+    }
+
+    match /communityPosts/{postId} {
+      allow read: if signedIn();
+      allow create: if verified() && validPost();
+      allow update: if false;
+      allow delete: if verified() && resource.data.authorUid == request.auth.uid;
+
+      match /likes/{likerUid} {
+        allow read: if signedIn();
+        allow create: if verified() && likerUid == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['uid','createdAt']) &&
+          request.resource.data.keys().hasAll(['uid','createdAt']) &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if signedIn() && likerUid == request.auth.uid;
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if verified() &&
+          request.resource.data.keys().hasOnly(['authorUid','authorName','text','createdAt']) &&
+          request.resource.data.keys().hasAll(['authorUid','authorName','text','createdAt']) &&
+          request.resource.data.authorUid == request.auth.uid &&
+          request.resource.data.authorName is string &&
+          request.resource.data.authorName.size() >= 1 &&
+          request.resource.data.authorName.size() <= 60 &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() >= 3 &&
+          request.resource.data.text.size() <= 300 &&
+          request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if signedIn() && resource.data.authorUid == request.auth.uid;
+      }
+    }
+
+    match /communityFlags/{flagId} {
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly(['postId','reporterUid','reason','status','createdAt']) &&
+        request.resource.data.keys().hasAll(['postId','reporterUid','reason','status','createdAt']) &&
+        request.resource.data.postId is string &&
+        request.resource.data.postId.size() >= 1 &&
+        request.resource.data.postId.size() <= 150 &&
+        flagId == request.resource.data.postId + '_' + request.auth.uid &&
+        request.resource.data.reporterUid == request.auth.uid &&
+        request.resource.data.reason in [
+          'Spam','Harassment','Privacy concern','Misleading or unsafe','Other'
+        ] &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
+    // The existing project's other matches must be preserved when merging.
+    // This default deny is intentionally conservative for a NEW deployment.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

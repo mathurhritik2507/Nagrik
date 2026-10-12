@@ -199,6 +199,7 @@ export default function ProfileScreen() {
               <Text style={{ color: "#fff", marginTop: 6 }}>
                 {email}
               </Text>
+              <TouchableOpacity accessibilityRole="button" onPress={()=>router.push("/account-help")} style={{marginTop:10}}><Text style={{color:"#FFF",fontWeight:"900",textDecorationLine:"underline"}}>Verify email / account help →</Text></TouchableOpacity>
 
               <Text style={{ color: "#fff", marginTop: 6 }}>
                 📍 {area}, India

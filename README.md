@@ -1,5 +1,9 @@
 # Nagrik 🇮🇳
 
+> **Public beta / interactive demo:** The [free guest Civic Guide](https://nagrik-git-feature-nagrik-web-v2-working-flows-mathurhritik2507.vercel.app/demo) offers prepared civic guidance without signup or OpenAI API billing. Check that the latest Vercel Preview is **Ready** before sharing this link. The [signed-in beta](https://nagrik-eight.vercel.app/login) has personal local records, virtual weekly badges and optional Firebase community posting; the upgraded beta features are **not yet merged into production**. Details: [Public Demo](PUBLIC_DEMO.md) · [Public release checklist](PUBLIC_RELEASE_CHECKLIST.md).
+
+> **Transparency:** Demo challenge proofs are not independently verified, private issue records are not government filings, community rankings count self-reported text contributions, virtual crates are not redeemable vouchers, and the Free Civic Guide is **not** generative AI.
+
 AI-powered civic engagement platform focused on real-world civic participation, gamification, and community-driven public impact.
 
 ---

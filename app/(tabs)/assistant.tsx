@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { auth } from "../../firebaseConfig";
+import {civicGuideAnswer} from "../../lib/civicGuide";
 import {
     ActivityIndicator,
     Keyboard,
@@ -25,70 +27,65 @@ const colors = {
 export default function AssistantScreen() {
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
+  const [mode,setMode]=useState<"guide"|"live">("guide");
 
   const [messages, setMessages] = useState([
     {
-      role: "ai",
-      text: "Namaste 👋 I’m your Nagrik Civic Assistant. Ask me how to improve your civic score, what action to do today, or how to report an issue.",
+      role: "guide",
+      text: "Namaste! Free Civic Guide has prepared civic-reference guidance and works without AI credits. Live AI is optional. This is not a government service.",
     },
   ]);
 
-  const getAIReply = (input) => {
-    const text = input.toLowerCase();
-
-    if (text.includes("score") || text.includes("xp")) {
-      return "To improve your Civic Score, complete one challenge, upload one civic action with a clear photo, and report one real issue nearby. This gives you XP from multiple areas and improves your impact faster.";
+  const sendMessage = async () => {
+    const question=message.trim();
+    if(!question || typing)return;
+    if(question.length>600){
+      setMessages(prev=>[...prev,{role:"ai",text:"Keep your question within 600 characters."}]);
+      return;
     }
-
-    if (text.includes("report") || text.includes("issue") || text.includes("garbage") || text.includes("pothole")) {
-      return "You should report the issue with location, short description, and a clear photo. Example: 'Garbage dump near FC Road bus stop causing smell and traffic.' This makes the report useful for review.";
+    if(mode==="guide"){
+      const prepared=civicGuideAnswer(question);
+      setMessages(prev=>[...prev,
+        {role:"user",text:question},
+        {role:"guide",text:prepared.reply}
+      ]);
+      setMessage("");
+      Keyboard.dismiss();
+      return;
     }
-
-    if (text.includes("today") || text.includes("action")) {
-      return "Today’s best civic action: choose one small visible task — clean litter near your building, help someone follow traffic rules, water a public plant, or report one unsafe area.";
+    const account=auth.currentUser;
+    if(!account){
+      setMessages(prev=>[...prev,{role:"ai",text:"Please sign in again to use Nagrik Civic AI."}]);
+      return;
     }
-
-    if (text.includes("learn") || text.includes("civic")) {
-      return "Civic sense means respecting shared public spaces. Start with simple habits: don’t litter, follow signals, avoid unnecessary honking, save water, and report public issues responsibly.";
-    }
-
-    if (text.includes("leaderboard") || text.includes("rank")) {
-      return "To climb the leaderboard, focus on consistency. Upload civic actions, complete daily challenges, and maintain your streak. Small daily actions matter more than one big action.";
-    }
-
-    if (text.includes("reward") || text.includes("badge")) {
-      return "Rewards and badges are unlocked through XP. Keep uploading genuine civic actions and completing challenges. Future versions can connect these rewards with local brand partners.";
-    }
-
-    if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
-      return "Hello! 👋 I can help you decide what civic action to take, how to report an issue, or how to grow your Nagrik profile.";
-    }
-
-    return "Good question. My suggestion: take one small real civic action, document it clearly, and stay consistent. Nagrik is about building better public habits through daily action.";
-  };
-
-  const sendMessage = () => {
-    if (!message.trim()) return;
-
-    const userMessage = {
-      role: "user",
-      text: message.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const history=messages.slice(1).slice(-6).map(item=>({
+      role:item.role==="user"?"user":"assistant",
+      content:item.text
+    }));
+    setMessages(prev=>[...prev,{role:"user",text:question}]);
     setMessage("");
     setTyping(true);
     Keyboard.dismiss();
-
-    setTimeout(() => {
-      const aiReply = {
-        role: "ai",
-        text: getAIReply(userMessage.text),
-      };
-
-      setMessages((prev) => [...prev, aiReply]);
-      setTyping(false);
-    }, 900);
+    try{
+      const token=await account.getIdToken();
+      const baseUrl=process.env.EXPO_PUBLIC_NAGRIK_API_BASE||"https://nagrik-eight.vercel.app";
+      const endpoint=(baseUrl.endsWith("/")?baseUrl.slice(0,-1):baseUrl)+"/api/civic-assistant";
+      const response=await fetch(endpoint,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+        body:JSON.stringify({message:question,history})
+      });
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.error||"AI is unavailable right now.");
+      setMessages(prev=>[...prev,{role:"ai",text:String(payload.reply||"No reply received.")}]);
+    }catch(error){
+      // Never disguise a deterministic guide reply as a successful AI response.
+      const prepared=civicGuideAnswer(question);
+      setMessages(prev=>[...prev,
+        {role:"guide",text:"Live AI unavailable ("+(error?.message||"provider error")+"). Showing prepared reference material instead.\\n\\n"+prepared.reply}
+      ]);
+      setMode("guide");
+    }finally{setTyping(false);}
   };
 
   const quickPrompt = (text) => {
@@ -118,7 +115,7 @@ export default function AssistantScreen() {
               }}
             >
               <Text style={{ color: "#fff", fontSize: 32, fontWeight: "900" }}>
-                Civic Assistant 🤖
+                Nagrik Civic Assistant
               </Text>
 
               <Text
@@ -129,10 +126,25 @@ export default function AssistantScreen() {
                   lineHeight: 22,
                 }}
               >
-                Ask anything about civic actions, reports, XP, rewards, and public behavior.
+                Ask civic questions about community, public services, sustainability, reporting, and more. General guidance only.
               </Text>
             </View>
 
+            <View style={{marginTop:17,backgroundColor:"#FFF",padding:13,borderRadius:15}}>
+              <Text style={{fontSize:13,color:colors.muted,lineHeight:20,marginBottom:10}}>
+                Free Civic Guide is curated reference guidance, not generative AI. It runs without network API calls or billing.
+              </Text>
+              <View style={{flexDirection:"row",gap:9}}>
+                <TouchableOpacity accessibilityRole="button" onPress={()=>setMode("guide")}
+                  style={{flex:1,padding:11,alignItems:"center",borderRadius:10,backgroundColor:mode==="guide"?colors.primary:"#EEF2F8"}}>
+                  <Text style={{color:mode==="guide"?"#FFF":colors.text,fontWeight:"800"}}>Free Guide</Text>
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" onPress={()=>setMode("live")}
+                  style={{flex:1,padding:11,alignItems:"center",borderRadius:10,backgroundColor:mode==="live"?colors.primary:"#EEF2F8"}}>
+                  <Text style={{color:mode==="live"?"#FFF":colors.text,fontWeight:"800"}}>Live AI (credits)</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             <Text
               style={{
                 fontSize: 24,
@@ -197,6 +209,9 @@ export default function AssistantScreen() {
                   maxWidth: "85%",
                 }}
               >
+                {item.role!=="user"?<Text style={{color:colors.primary,fontWeight:"800",fontSize:11,marginBottom:5}}>
+                  {item.role==="guide"?"CIVIC GUIDE · PREPARED CONTENT":"LIVE AI"}
+                </Text>:null}
                 <Text
                   style={{
                     color: item.role === "user" ? "#fff" : colors.text,
@@ -247,7 +262,7 @@ export default function AssistantScreen() {
             <TextInput
               value={message}
               onChangeText={setMessage}
-              placeholder="Ask Nagrik AI..."
+              placeholder={mode==="guide"?"Ask the free Civic Guide...":"Ask Live AI..."}
               placeholderTextColor={colors.muted}
               style={{
                 flex: 1,

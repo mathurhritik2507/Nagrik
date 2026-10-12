@@ -1,7 +1,8 @@
 // Browser-specific Firebase Auth initialization. Native config remains unchanged.
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
+import { NAGRIK_FIRESTORE_DATABASE_ID } from "./config/firestoreDatabase";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCX0Vkq75s7D2ag0oQt_JRf-bjfnhQ_7DM",
@@ -13,5 +14,12 @@ const firebaseConfig = {
   measurementId: "G-T5RTHM3L3K",
 };
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// IMPORTANT: Firebase's implicit "(default)" database does not exist in
+// Nagrik. Existing data/rules are in the explicitly named "default" database.
+// Set the third argument, otherwise community writes silently queue offline.
+// Keep the web-only long-polling option for now, until authenticated testing
+// establishes it can be removed without transport regressions.
+export const db = initializeFirestore(app,{
+  experimentalForceLongPolling:true,
+},NAGRIK_FIRESTORE_DATABASE_ID);
 export const auth = getAuth(app);
