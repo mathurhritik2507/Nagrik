@@ -9,7 +9,6 @@ import { Button, Card, Heading, Shell, palette, dateLabel } from "../../componen
 
 const discovery:NagrikFeature[]=[
   {title:"Community feed",summary:"See what your neighbors are sharing.",icon:"people-outline",href:"/community",tone:"blue"},
-  {title:"Weekly challenges",summary:"Find a small mission you can try.",icon:"flag-outline",href:"/challenges",tone:"mint"},
   {title:"Free Civic Guide",summary:"Get prepared guidance on civic topics.",icon:"chatbubbles-outline",href:"/assistant",tone:"orange"},
 ];
 
@@ -39,7 +38,7 @@ export default function WebHome(){
     </View>
 
     <View style={{marginBottom:9}}>
-      <Heading muted="Three easy ways to explore Nagrik.">Discover</Heading>
+      <Heading muted="Start here, or use the Challenges tab for weekly missions.">Discover</Heading>
     </View>
     <View style={{flexDirection:"row",flexWrap:"wrap",gap:12,marginBottom:22}}>
       {discovery.map(item=><FeatureTile key={item.href} item={item} compact/>)}
