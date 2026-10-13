@@ -9,20 +9,20 @@ const fallback=source("app/(tabs)/more.tsx");
 const tile=source("components/web/FeatureTile.tsx");
 
 for(const route of ["index","community","challenges","more"]){
- assert.match(layout,new RegExp('<Tabs\\.Screen name="'+route+'" options=\\{\\{title:'),"Required visible tab: "+route);
+ assert.ok(layout.includes('<Tabs.Screen name="'+route+'" options={{title:'),"Missing visible tab: "+route);
 }
 for(const route of ["explore","report","profile","leaderboard","assistant","impact"]){
- assert.match(layout,new RegExp('<Tabs\\.Screen name="'+route+'" options=\\{\\{href:null\\}\\}'),"Keep alternate route hidden from primary tabs: "+route);
+ assert.ok(layout.includes('<Tabs.Screen name="'+route+'" options={{href:null}}'),"Missing hidden route: "+route);
 }
-assert.equal((layout.match(/options=\\{\\{title:/g)||[]).length,4,"Exactly four visible tabs");
+assert.equal(layout.split("options={{title:").length-1,4,"Exactly four visible tabs");
 assert.match(home,/Record an action/);
 assert.match(home,/Save an issue note/);
 assert.match(home,/Explore all Nagrik features/);
-assert.doesNotMatch(home,/CommunityPreview|Explore your civic toolkit|<Metric|<Hero/,"Home must not reintroduce crowded feed and catalog");
+assert.doesNotMatch(home,/CommunityPreview|Explore your civic toolkit|<Metric|<Hero/,"Don't reintroduce crowded Home panels");
 for(const route of ["/explore","/report","/challenges","/community","/leaderboard","/assistant","/impact","/profile","/account-help"]){
- assert.ok(more.includes('href:"'+route+'"'),"More directory is missing route "+route);
+ assert.ok(more.includes('href:"'+route+'"'),"Missing More directory route "+route);
 }
 assert.match(more,/Everything in one place/);
 assert.match(fallback,/Explore Nagrik/);
 assert.match(tile,/accessibilityRole="button"/);
-console.log("PASS: Nagrik focused Home, four-tab navigation, accessible More directory, and complete routes.");
+console.log("PASS: focused Home, four-tab navigation, accessible feature directory and complete routes.");
