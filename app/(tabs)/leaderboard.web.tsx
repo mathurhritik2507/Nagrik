@@ -23,7 +23,7 @@ export default function PublicLeaderboard(){
   {error?<Notice text={error} error/>:null}
   <Card>
     {loading?<Text style={{color:palette.muted}}>Loading community contributors…</Text>:
-     ranked.length===0?<Empty text="No public contributions this week yet. Verified members can share their first one in the Feed."/>:
+     ranked.length===0?<Empty text="No public contributions this week yet. Signed-in members can share their first one in the Feed."/>:
      ranked.map((person,i)=><View key={person.uid} style={{
         flexDirection:"row",alignItems:"center",paddingVertical:15,
         paddingHorizontal:8,borderBottomWidth:i===ranked.length-1?0:1,
