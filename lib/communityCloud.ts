@@ -2,7 +2,7 @@
  * Nagrik community beta: Firebase Firestore shared text posts.
  *
  * This is separate from browser-private issue reports, photo proofs, and XP.
- * Publishing requires a verified email and explicit user action.
+ * Publishing requires a signed-in account and explicit public-post consent.
  * Rankings measure self-reported public contributions, NOT verified impact.
  */
 import { auth, db } from "../firebaseConfig";
@@ -34,7 +34,6 @@ export type CommunityComment = {
 export const categories = ["Cleanliness","Environment","Accessibility","Volunteering","Community","Civic learning","Other"];
 const names=(value:string,max=60)=>value.replace(/[<>]/g,"").trim().replace(/\s+/g," ").slice(0,max);
 const currentUser=()=>{const u=auth.currentUser;if(!u)throw new Error("Please sign in.");return u;};
-const requireEmail=()=>{const u=currentUser();if(!u.emailVerified)throw new Error("Verify your email address before publishing publicly.");return u;};
 const cleanText=(input:string,min:number,max:number,what:string)=>{
   const v=input.trim().replace(/[\u0000-\u001f\u007f]/g," ");
   if(v.length<min||v.length>max)throw new Error(`${what} must be ${min}–${max} characters.`);
@@ -55,7 +54,7 @@ export function communitySubmissionId(userId:string,category:string,city:string,
 }
 
 export async function publishCommunityPost(input:{text:string;city:string;category:string}):Promise<"posted"|"already-posted">{
-  const u=requireEmail();
+  const u=currentUser();
   if(!categories.includes(input.category))throw new Error("Choose a valid category.");
   const text=cleanText(input.text,20,650,"Post");
   const city=cleanText(input.city,2,65,"City");
@@ -182,7 +181,7 @@ export function subscribeCommunityPosts(onData:(items:CommunityPost[])=>void,onE
       syncState:communitySyncState(d.metadata.hasPendingWrites,snap.metadata.fromCache),
     } as CommunityPost))),
     err=>onError(err.code==="permission-denied"?
-      "Firestore denied feed access. Check email verification, authentication and the published security rules.":"Unable to load the community feed: "+(err.code||err.message)));
+      "Firestore denied feed access. Check authentication and the published security rules.":"Unable to load the community feed: "+(err.code||err.message)));
 }
 export async function deleteCommunityPost(item:CommunityPost){
   const u=currentUser();
@@ -190,7 +189,7 @@ export async function deleteCommunityPost(item:CommunityPost){
   await deleteDoc(doc(db,"communityPosts",item.id));
 }
 export async function setPostLike(postId:string,liked:boolean){
-  const u=requireEmail();
+  const u=currentUser();
   const ref=doc(db,"communityPosts",postId,"likes",u.uid);
   if(liked)await deleteDoc(ref);
   else await setDoc(ref,{uid:u.uid,createdAt:serverTimestamp()});
@@ -201,7 +200,7 @@ export function subscribeLikes(postId:string,onData:(uids:string[])=>void,onErro
     err=>onError?.("Could not load reactions: "+err.message));
 }
 export async function addCommunityComment(postId:string,input:string){
-  const u=requireEmail();
+  const u=currentUser();
   await addDoc(collection(db,"communityPosts",postId,"comments"),{
     authorUid:u.uid,
     authorName:names(u.displayName||"Nagrik member"),

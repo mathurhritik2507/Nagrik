@@ -4,11 +4,11 @@ This upgrade is a **single coordinated release candidate**. It is intentionally 
 
 ## Implemented in the development branch
 - Web navigation: Home, Feed, Challenges, Reports, Profile; Actions, Civic AI and Leaderboard are accessible from Home or Feed.
-- Firebase Auth: signup/login, email verification before public posting, password reset.
+- Firebase Auth: signup/login without mandatory email verification, password reset.
 - Local civic action reporting, issue reporting, proof uploads and reward cabinet.
 - Weekly badges after three distinct missions during a UTC week. **Not redeemable vouchers.**
 - AI civic chat via authenticated Vercel function and OpenAI API. Requires a private API key and production rate limiting.
-- Firestore shared **text-only** feed (opt-in) for verified members, author names, city, category and date.
+- Firestore shared **text-only** feed (opt-in) for signed-in members, author names, city, category and date.
 - Live likes, comments, self-delete, and post reporting.
 - Weekly Leaderboard from the latest **100 visible public posts**, clear sampling/unverified disclaimers.
 - Homepage public contribution highlights from Firestore.
@@ -22,14 +22,14 @@ The repo contains `firestore.community.rules`, **NOT applied automatically**.
 4. Merge the `communityPosts` and `communityFlags` match sections from `firestore.community.rules` into the existing `service cloud.firestore` rules block. Review the fallback rule to ensure you don't accidentally grant broad access or break unrelated data. Publish rules.
 5. Test rules with the Firebase Rules Playground or Firestore Emulator:
    - unauthenticated post create denied
-   - signed-in but unverified post create denied
+   - signed-in but unsigned-in self-authored post create allowed
    - verified self-authored post create allowed
    - editing another user's post denied
    - reading private user data across accounts denied
    - liking/commenting as another UID denied
    - public flag collection not readable by users
    - unrelated collections retain their previous intended access policy
-6. After rules are deployed, open the Vercel **Preview**, sign in with **two different verified test accounts** (separate profiles/browsers):
+6. After rules are deployed, open the Vercel **Preview**, sign in with **two different signed-in test accounts** (separate profiles/browsers):
    - A creates an opted-in text post, B sees it
    - B likes/comments, A sees it update live
    - B reports an inappropriate test post; the flag appears in the admin Firestore console
@@ -76,7 +76,7 @@ The repo contains `firestore.community.rules`, **NOT applied automatically**.
 - Nagrik is not an official government grievance service.
 - Published feed posts are unverified; rankings measure self-reported activity and are sampled.
 - Current local action/report/proof data is not synced across devices.
-- Community text posts are shared across users only **after Firestore database security is configured**.
+- Community text posts are shared across users only **after Firestore database security is configured**. The no-verification policy requires manually updating the LIVE Firestore Rules for the named database `default`; GitHub updates alone do not change them.
 - Virtual crates have no cash/voucher value. Do not call them redeemable rewards.
 - AI may be wrong; users should verify local laws/contact details on official sites.
 
