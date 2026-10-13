@@ -8,17 +8,14 @@ const Btn=({title,onPress,disabled=false}:{title:string;onPress:()=>void;disable
   <Text style={{color:"#FFF",fontWeight:"800"}}>{title}</Text>
  </TouchableOpacity>;
 export default function AccountHelpNative(){
- const {user,loading,busy,error,info,refresh,sendVerification,changePassword}=useAccountHelp();
+ const {user,loading,busy,error,info,changePassword}=useAccountHelp();
  const [current,setCurrent]=useState("");const [next,setNext]=useState("");const [confirm,setConfirm]=useState("");
  if(loading)return <View style={{flex:1,justifyContent:"center"}}><ActivityIndicator color={ORANGE}/></View>;
  return <ScrollView style={{backgroundColor:"#F4F7FB",flex:1}} contentContainerStyle={{padding:22,paddingBottom:100}}>
   <Text style={{fontWeight:"900",fontSize:30,color:INK,marginBottom:8}}>Account help</Text>
   {!user?<Btn title="Sign in first" onPress={()=>router.replace("/login")}/>:<>
    <Text style={{fontSize:16,color:INK,fontWeight:"800",marginVertical:12}}>{user.email}</Text>
-   <Text style={{color:user.emailVerified?"#13795B":"#B42318",fontWeight:"800"}}>{user.emailVerified?"Email verified":"Email not verified"}</Text>
-   <Btn title="Check my verification status" onPress={refresh} disabled={busy}/>
-   {!user.emailVerified?<Btn title="Request verification email" onPress={sendVerification} disabled={busy}/>:null}
-   <Text style={{color:MUTED,marginTop:12,lineHeight:21}}>Requests don't guarantee inbox delivery. Check the inbox for the sign-in address above, including Spam and All Mail.</Text>
+   <Text style={{color:MUTED,marginTop:10,lineHeight:21}}>Email verification is optional. You can join the Nagrik beta and use community features immediately after signing in. Keep access to this email for account recovery.</Text>
    <Text style={{color:INK,fontWeight:"900",fontSize:20,marginTop:27}}>Change password without email</Text>
    <Text style={{color:MUTED,marginTop:8,lineHeight:21}}>If you know your current password, update it securely while signed in.</Text>
    {[
