@@ -13,7 +13,7 @@ const fs=require("node:fs");
   page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE ERROR "+m.text())});
   page.on("requestfailed",r=>errors.push("REQUEST FAILED "+r.url()+" "+r.failure()?.errorText));
   const origin="http://127.0.0.1:3000";
-  for (const path of ["/login","/demo","/forgot-password","/account-help","/","/community"]){
+  for (const path of ["/login","/signup","/demo","/forgot-password","/account-help","/","/community"]){
     console.log("CHECK",path);
     errors.length=0;
     await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:30000});
@@ -22,9 +22,13 @@ const fs=require("node:fs");
     console.log("URL",page.url());
     console.log("BODY",JSON.stringify(text));
     console.log("JS_ERRORS",JSON.stringify(errors.slice(0,12)));
-    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/demo"?"demo":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
+    await page.screenshot({path:"smoke-"+(path==="/login"?"login":path==="/signup"?"signup":path==="/demo"?"demo":path==="/forgot-password"?"reset":path==="/account-help"?"account-help":path==="/"?"home":"community")+".png",fullPage:true});
     if(text.trim().length<12)throw Error("Blank screen at "+path+"; errors: "+errors.join("; "));
     if(path==="/login")assert.match(text,/Welcome back|Sign in|Nagrik/i,"Login screen missing");
+    if(path==="/signup"){
+      assert.match(text,/Create an account/i,"Signup screen missing");
+      assert.match(text,/No verification email is needed/i,"Mandatory verification still described on signup");
+    }
     if(path==="/demo"){
       assert.match(text,/FREE PUBLIC DEMO/i,"Guest public demo title missing");
       assert.match(text,/Get free guidance/i,"Guest guidance action missing");
