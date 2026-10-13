@@ -103,6 +103,7 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen name="more" options={{ href: null }} />
       <Tabs.Screen name="leaderboard" options={{ href: null }} />
       <Tabs.Screen name="learn" options={{ href: null }} />
       <Tabs.Screen name="report" options={{ href: null }} />
