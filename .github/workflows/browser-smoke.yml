@@ -1,7 +1,7 @@
 name: Nagrik browser smoke
 on:
   push:
-    branches: [feature/nagrik-web-v2-working-flows]
+    branches: [feature/clean-dashboard-navigation, feature/nagrik-web-v2-working-flows]
   workflow_dispatch:
 jobs:
   browser-smoke:
