@@ -47,7 +47,10 @@ assert.equal(ranked[1].count,1);
 console.log("Community ranking tests passed.");
 
 const rules=fs.readFileSync("firestore.community.rules","utf8");
-assert.match(rules,/email_verified/);
+assert.match(rules,/allow create: if signedIn\(\) && validPost\(\)/);
+assert.doesNotMatch(rules,/email_verified|verified\(\)/);
+assert.match(source,/const u=currentUser\(\)/);
+assert.doesNotMatch(source,/requireEmail|Verify your email address before publishing/);
 assert.match(rules,/request\.auth\.uid/);
 assert.match(rules,/communityPosts/);
 assert.match(rules,/communityFlags/);
