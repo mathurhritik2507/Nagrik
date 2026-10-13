@@ -1,7 +1,7 @@
 name: Nagrik browser smoke
 on:
   push:
-    branches: [feature/nagrik-web-v2-working-flows]
+    branches: [feature/nagrik-web-v2-working-flows, fix/remove-mandatory-email-verification]
   workflow_dispatch:
 jobs:
   browser-smoke:
