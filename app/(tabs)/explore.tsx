@@ -37,13 +37,6 @@ export default function UploadScreen() {
   const pickImage = async () => {
     Keyboard.dismiss();
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow photo access.");
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
@@ -116,7 +109,7 @@ export default function UploadScreen() {
         JSON.stringify([newPost, ...parsedPosts])
       );
 
-      Alert.alert("Success ✅", "Action uploaded successfully! +50 XP");
+      Alert.alert("Saved privately ✅", "Civic action saved on this device (+50 practice XP). It was not uploaded to a public feed.");
 
       setCaption("");
       setCategory("Cleanliness");
@@ -151,7 +144,7 @@ export default function UploadScreen() {
             </Text>
 
             <Text style={{ color: "#fff", fontSize: 16, marginTop: 8 }}>
-              Share your civic contribution and earn rewards.
+              Record a civic action privately and earn virtual practice XP.
             </Text>
 
             <View
