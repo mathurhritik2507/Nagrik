@@ -4,7 +4,7 @@
 
 - **Guest, no signup:** `/demo`. Anyone can ask the locally processed, curated Civic Guide about supported topics. No OpenAI API request or paid credits.
 - **Authenticated demo:** Sign up or sign in. Home, Actions, Reports, Challenges, Profile and Insights are available within the app.
-- **Shared community:** Email verification is required to publish. The text-only Feed, comments, likes and leaderboard use the existing named Firestore database `default`; real cross-account submission and moderation remain release gates.
+- **Shared community:** A signed-in account and explicit opt-in are required to publish; verification email is not required once the updated Firestore rules are published. The text-only Feed, comments, likes and leaderboard use the existing named Firestore database `default`; real cross-account submission and moderation remain release gates.
 - **Optional Live AI:** Users may intentionally select Live AI inside Civic Assistant. If the owner has no API credits or the provider fails, the page automatically and **explicitly** displays a prepared Civic Guide response instead of claiming that generative AI answered.
 
 ## What actually persists
@@ -43,7 +43,7 @@ To run the interactive development site: `npm run web`. A browser smoke test run
 3. Create a user, log in, log out, reset password, and verify email.
 4. Save a private action and report; refresh and confirm browser persistence. Verify they do not appear in shared Feed.
 5. Complete three distinct challenge proofs during one UTC week; claim the **virtual badge**, reload and confirm persistence.
-6. Have two verified users: publish exactly one opted-in text contribution, refresh and confirm server save, then test viewing, commenting, liking, flagging and deletion across accounts.
+6. Have two different signed-in users: publish exactly one opted-in text contribution, refresh and confirm server save, then test viewing, commenting, liking, flagging and deletion across accounts.
 7. Verify Firestore rules, spam throttling, a trained moderator/contact path, privacy/terms, backup/recovery, quotas and Android regressions before large-scale public use.
 8. Only after those tests, merge draft PR #1 and verify Vercel **Production** matches the exact tested commit.
 
