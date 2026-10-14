@@ -86,13 +86,6 @@ export default function ProfileScreen() {
   };
 
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow photo access.");
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       quality: 0.7,
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -199,7 +192,7 @@ export default function ProfileScreen() {
               <Text style={{ color: "#fff", marginTop: 6 }}>
                 {email}
               </Text>
-              <TouchableOpacity accessibilityRole="button" onPress={()=>router.push("/account-help")} style={{marginTop:10}}><Text style={{color:"#FFF",fontWeight:"900",textDecorationLine:"underline"}}>Verify email / account help →</Text></TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={()=>router.push("/account-help")} style={{marginTop:10}}><Text style={{color:"#FFF",fontWeight:"900",textDecorationLine:"underline"}}>Account help →</Text></TouchableOpacity>
 
               <Text style={{ color: "#fff", marginTop: 6 }}>
                 📍 {area}, India
@@ -309,7 +302,7 @@ export default function ProfileScreen() {
               lineHeight: 22,
             }}
           >
-            Your public civic score based on actions, reports, streaks, and
+            Your local practice score based on actions, reports, streaks, and
             participation.
           </Text>
 
