@@ -40,8 +40,8 @@ export default function WebProfile(){
      </View>
    </Card>
    <Card>
-     <Heading>Account & verification</Heading>
-     <Text style={{color:palette.muted,lineHeight:22,marginBottom:12}}>Check your exact Firebase sign-in address, resend verification, change your password without email delivery, or request a secure email address change.</Text>
+     <Heading>Account & security</Heading>
+     <Text style={{color:palette.muted,lineHeight:22,marginBottom:12}}>Check your sign-in address, change your password without email delivery, or request a secure email address change. Email verification is not needed for beta participation.</Text>
      <Button label="Open account help" secondary onPress={()=>router.push("/account-help")}/>
    </Card>
    <Card>
