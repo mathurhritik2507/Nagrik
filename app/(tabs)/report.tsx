@@ -38,13 +38,6 @@ export default function ReportScreen() {
   const pickImage = async () => {
     Keyboard.dismiss();
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow photo access.");
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
@@ -106,7 +99,7 @@ export default function ReportScreen() {
         description: description.trim(),
         image: image,
         xp: 20,
-        status: "Pending Review",
+        status: "Saved on device",
         createdAt: new Date().toISOString(),
       };
 
@@ -118,7 +111,7 @@ export default function ReportScreen() {
         JSON.stringify([newReport, ...parsedReports])
       );
 
-      Alert.alert("Success ✅", "Report submitted successfully! +20 XP");
+      Alert.alert("Saved privately ✅", "Issue note saved on this device (+20 practice XP). Nagrik has not filed it with any government authority.");
 
       setIssueType("Garbage Dump");
       setLocation("");
@@ -154,7 +147,7 @@ export default function ReportScreen() {
             </Text>
 
             <Text style={{ color: "#fff", fontSize: 16, marginTop: 8 }}>
-              Report civic issues near you.
+              Save a private note about a civic issue. This does not file an official complaint.
             </Text>
 
             <View
