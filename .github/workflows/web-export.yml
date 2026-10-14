@@ -23,6 +23,8 @@ jobs:
       - run: node scripts/test-firestore-rest.cjs
       - run: node scripts/test-firestore-database-target.cjs
       - run: node scripts/test-account-help.cjs
+      - run: node scripts/test-google-play-preflight.cjs
+      - run: npx expo config --type public --json > /dev/null
       - run: npx tsc --project tsconfig.web.json --noEmit
       - run: node scripts/test-simple-home.cjs
       - run: npm run export:web
