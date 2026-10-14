@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   EmailAuthProvider, onAuthStateChanged, reauthenticateWithCredential,
-  reload, sendEmailVerification, updatePassword, verifyBeforeUpdateEmail,
+  updatePassword, verifyBeforeUpdateEmail,
   type User,
 } from "firebase/auth";
 import { auth } from "../firebaseConfig";
@@ -36,7 +36,6 @@ export function useAccountHelp() {
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState("");
   const [info,setInfo] = useState("");
-  const [cooldown,setCooldown] = useState(0);
   useEffect(() => onAuthStateChanged(auth, u => {setUser(u);setLoading(false);}), []);
 
   const run = useCallback(async (action:() => Promise<string>) => {
@@ -45,28 +44,6 @@ export function useAccountHelp() {
     catch(e){setError(explainAccountError(e));}
     finally{setBusy(false);}
   },[]);
-
-  const refresh = () => run(async()=>{
-    const u=auth.currentUser;
-    if(!u)throw Object.assign(new Error("Sign in first"),{code:"auth/invalid-user-token"});
-    await reload(u);
-    await u.getIdToken(true);
-    setUser(auth.currentUser ? ({ ...u } as User) : null);
-    // Firebase mutates the original User on reload. Copy UI fields to force React to redraw.
-    return u.emailVerified
-      ? "Verified! Your account can now publish to the community."
-      : "Firebase still reports this account as unverified. Check the inbox associated with the address above.";
-  });
-
-  const sendVerification = () => run(async()=>{
-    const u=auth.currentUser;
-    if(!u)throw Object.assign(new Error("Sign in first"),{code:"auth/invalid-user-token"});
-    if(u.emailVerified)return "Your email is already verified.";
-    if(Date.now()<cooldown) return "Please wait before requesting another verification email.";
-    await sendEmailVerification(u);
-    setCooldown(Date.now()+60000);
-    return "Firebase accepted the verification request for "+(u.email||"your sign-in address")+". This does not confirm email delivery. Check spam and All Mail.";
-  });
 
   const changePassword = (currentPassword:string,newPassword:string,confirmPassword:string) => run(async()=>{
     const u=auth.currentUser;
@@ -90,5 +67,5 @@ export function useAccountHelp() {
     return "Firebase accepted the email-change request. Open the confirmation link sent to the NEW email address. Your sign-in address will not change until that link is confirmed.";
   });
 
-  return {user,loading,busy,error,info,refresh,sendVerification,changePassword,changeEmail,clear:()=>{setError("");setInfo("");}};
+  return {user,loading,busy,error,info,changePassword,changeEmail,clear:()=>{setError("");setInfo("");}};
 }
