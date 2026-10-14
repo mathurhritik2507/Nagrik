@@ -6,7 +6,12 @@ import {onAuthStateChanged,User} from "firebase/auth";
 import {auth} from "../../firebaseConfig";
 import {palette} from "../../components/web/Kit";
 
-const icons:Record<string,any>={index:"home-outline",community:"people-outline",explore:"add-circle-outline",challenges:"flag-outline",report:"document-text-outline",profile:"person-circle-outline"};
+const icons:Record<string,any>={
+  index:"home-outline",
+  community:"people-outline",
+  challenges:"flag-outline",
+  more:"grid-outline",
+};
 export default function WebTabs(){
  const [user,setUser]=useState<User|null|undefined>(undefined);
  const {width}=useWindowDimensions();
@@ -15,18 +20,19 @@ export default function WebTabs(){
  if(!user)return <Redirect href="/login"/>;
  return <Tabs screenOptions={({route})=>({
    headerShown:false,
-   tabBarActiveTintColor:"#FF9A4B",
-   tabBarInactiveTintColor:"#B6C7D9",
-   tabBarLabelStyle:{fontWeight:"800",fontSize:width<500?10:12,marginBottom:5},
-   tabBarStyle:{height:width<500?72:78,paddingTop:11,paddingBottom:8,backgroundColor:palette.navy,borderTopWidth:0},
+   tabBarActiveTintColor:palette.orange,
+   tabBarInactiveTintColor:"#7B8BA0",
+   tabBarLabelStyle:{fontWeight:"800",fontSize:width<500?11:12,marginBottom:5},
+   tabBarStyle:{height:width<500?70:75,paddingTop:10,paddingBottom:9,backgroundColor:"#FFF",borderTopWidth:1,borderTopColor:palette.border},
    tabBarIcon:({color,size})=><Ionicons name={icons[route.name]||"ellipse-outline"} size={size} color={color}/>,
  })}>
    <Tabs.Screen name="index" options={{title:"Home"}}/>
-   <Tabs.Screen name="community" options={{title:"Feed"}}/>
-   <Tabs.Screen name="explore" options={{href:null}}/>
+   <Tabs.Screen name="community" options={{title:"Community"}}/>
    <Tabs.Screen name="challenges" options={{title:"Challenges"}}/>
-   <Tabs.Screen name="report" options={{title:"Reports"}}/>
-   <Tabs.Screen name="profile" options={{title:"Profile"}}/>
+   <Tabs.Screen name="more" options={{title:"More"}}/>
+   <Tabs.Screen name="explore" options={{href:null}}/>
+   <Tabs.Screen name="report" options={{href:null}}/>
+   <Tabs.Screen name="profile" options={{href:null}}/>
    <Tabs.Screen name="impact" options={{href:null}}/>
    <Tabs.Screen name="assistant" options={{href:null}}/>
    <Tabs.Screen name="leaderboard" options={{href:null}}/>
