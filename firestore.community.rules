@@ -1,13 +1,12 @@
 // Candidate rules for Nagrik's NEW community collections.
 // BEFORE APPLYING: merge these matches into your CURRENT Firestore rules.
 // Do not blindly replace existing rules; that may break older mobile features.
-// Publishing is allowed only for verified-email Firebase users. Shared text
+// Publishing is allowed for signed-in Firebase users without email verification. Shared text
 // remains UNVERIFIED; moderation and anti-spam still require production work.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function verified() { return signedIn() && request.auth.token.email_verified == true; }
     function validPost() {
       return request.resource.data.keys().hasOnly([
           'authorUid','authorName','city','category','text','createdAt','moderation'
@@ -35,13 +34,13 @@ service cloud.firestore {
 
     match /communityPosts/{postId} {
       allow read: if signedIn();
-      allow create: if verified() && validPost();
+      allow create: if signedIn() && validPost();
       allow update: if false;
-      allow delete: if verified() && resource.data.authorUid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.authorUid == request.auth.uid;
 
       match /likes/{likerUid} {
         allow read: if signedIn();
-        allow create: if verified() && likerUid == request.auth.uid &&
+        allow create: if signedIn() && likerUid == request.auth.uid &&
           request.resource.data.keys().hasOnly(['uid','createdAt']) &&
           request.resource.data.keys().hasAll(['uid','createdAt']) &&
           request.resource.data.uid == request.auth.uid &&
@@ -52,7 +51,7 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow read: if signedIn();
-        allow create: if verified() &&
+        allow create: if signedIn() &&
           request.resource.data.keys().hasOnly(['authorUid','authorName','text','createdAt']) &&
           request.resource.data.keys().hasAll(['authorUid','authorName','text','createdAt']) &&
           request.resource.data.authorUid == request.auth.uid &&

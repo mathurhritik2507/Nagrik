@@ -7,7 +7,7 @@ import {useAccountHelp} from "../lib/useAccountHelp";
 import {Button,Card,Field,Heading,Notice,Shell,palette} from "../components/web/Kit";
 
 export default function AccountHelpWeb(){
- const {user,loading,busy,error,info,refresh,sendVerification,changePassword,changeEmail,clear}=useAccountHelp();
+ const {user,loading,busy,error,info,changePassword,changeEmail,clear}=useAccountHelp();
  const [currentPassword,setCurrentPassword]=useState("");
  const [newPassword,setNewPassword]=useState("");
  const [confirmPassword,setConfirmPassword]=useState("");
@@ -31,17 +31,12 @@ export default function AccountHelpWeb(){
    await changeEmail(newEmailPassword,nextEmail);
    setNewEmailPassword("");setNextEmail("");
  };
- return <Shell title="Account & email help" subtitle="Check exactly which Firebase account you are using, request verification, or maintain your account without visiting Firebase Console." eyebrow="ACCOUNT / SECURITY">
+ return <Shell title="Account & email help" subtitle="Check your Firebase sign-in address and manage your password or account details." eyebrow="ACCOUNT / SECURITY">
    <Card>
      <Heading>Your actual sign-in account</Heading>
      <Text selectable style={{fontSize:17,fontWeight:"900",color:palette.ink,marginBottom:9}}>{user.email||"No email address found"}</Text>
-     <Text style={{fontSize:13,color:palette.muted,marginBottom:12}}>This is the address Firebase uses for verification. It can differ from an email shown in an older Nagrik profile.</Text>
-     <Text style={{color:user.emailVerified?palette.green:palette.red,fontWeight:"900",marginBottom:15}}>{user.emailVerified?"✓ Email verified":"● Email not verified"}</Text>
-     <View style={{flexDirection:"row",gap:9,flexWrap:"wrap"}}>
-       <Button label="Check verification status" secondary busy={busy} onPress={refresh}/>
-       {!user.emailVerified?<Button label="Send verification email" busy={busy} onPress={sendVerification}/>:null}
-     </View>
-     <Text style={{fontSize:12,color:palette.muted,marginTop:12,lineHeight:19}}>A successful send request only means Firebase accepted it. It does not prove inbox delivery. Check Spam, All Mail and Promotions. Wait between requests to avoid email limits.</Text>
+     <Text style={{fontSize:13,color:palette.muted,marginBottom:12}}>This is your actual Firebase sign-in and password recovery address.</Text>
+     <Text style={{color:palette.muted,fontSize:13,lineHeight:21,marginBottom:13}}>Email verification is not required to use Nagrik or share a community contribution during beta. Keep access to this address for password recovery.</Text>
      <View style={{marginTop:12}}><Button label="Switch to a different Nagrik account" secondary onPress={async()=>{await signOut(auth);router.replace("/login");}}/></View>
    </Card>
    <Notice text={error} error/><Notice text={info}/>
