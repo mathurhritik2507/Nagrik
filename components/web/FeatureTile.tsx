@@ -2,7 +2,7 @@ import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import { palette } from "./Kit";
+import { HelpTip, palette } from "./Kit";
 
 export type NagrikFeature = {
   title: string;
@@ -23,10 +23,11 @@ export function FeatureTile({item,compact=false}:{
   compact?:boolean;
 }){
   const tone=tones[item.tone||"blue"];
-  return <Pressable accessibilityRole="button" accessibilityLabel={item.title}
+  return <View style={{flexBasis:compact?195:250,flexGrow:1,minWidth:compact?170:230,position:"relative",zIndex:1}}>
+    <Pressable accessibilityRole="button" accessibilityLabel={item.title}
     onPress={()=>router.push(item.href as any)}
     style={({pressed})=>({
-      flexBasis:compact?195:250,flexGrow:1,minWidth:compact?170:230,
+      flex:1,
       padding:compact?16:19,backgroundColor:"#FFF",borderColor:palette.border,
       borderWidth:1,borderRadius:18,
       opacity:pressed?.78:1,
@@ -40,5 +41,9 @@ export function FeatureTile({item,compact=false}:{
       <Text style={{fontSize:12,fontWeight:"800",color:palette.orange}}>Open</Text>
       <Ionicons name="arrow-forward-outline" size={14} color={palette.orange}/>
     </View>
-  </Pressable>;
+    </Pressable>
+    <View style={{position:"absolute",top:11,right:11,zIndex:30}}>
+      <HelpTip label={item.title} text={item.summary+" Tap the tile to open this feature."}/>
+    </View>
+  </View>;
 }

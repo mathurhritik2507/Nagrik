@@ -12,7 +12,10 @@ export function Shell({ title, subtitle, eyebrow="NAGRIK / CIVIC SPACE", childre
     <View style={{width:"100%",maxWidth:1130,alignSelf:"center",paddingHorizontal:wide?32:16,paddingTop:wide?34:20,paddingBottom:130}}>
       <View style={{marginBottom:23}}>
         <Text style={{fontSize:11,fontWeight:"800",letterSpacing:2,color:palette.orange,marginBottom:8}}>{eyebrow}</Text>
-        <Text style={{fontSize:wide?35:28,fontWeight:"900",color:palette.navy}}>{title}</Text>
+        <View style={{flexDirection:"row",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <Text style={{fontSize:wide?35:28,fontWeight:"900",color:palette.navy}}>{title}</Text>
+          <HelpTip label={title} text={subtitle+" Tap the small question marks beside actions to learn what they do."}/>
+        </View>
         <Text style={{fontSize:14,color:palette.muted,marginTop:8,lineHeight:22}}>{subtitle}</Text>
       </View>
       {children}
@@ -36,11 +39,34 @@ export function Hero({kicker,title,description,children}:{kicker:string;title:st
 export function Heading({children,muted}:{children:ReactNode;muted?:string}){
   return <View style={{marginBottom:14,marginTop:7}}><Text style={{fontSize:19,fontWeight:"800",color:palette.ink}}>{children}</Text>{muted?<Text style={{fontSize:12,color:palette.muted,marginTop:3}}>{muted}</Text>:null}</View>;
 }
-export function Button({label,onPress,secondary=false,disabled=false,busy=false}:{label:string;onPress:()=>void;secondary?:boolean;disabled?:boolean;busy?:boolean}){
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled||busy} onPress={onPress}
+/** Tap the ? on a feature or action to see a short explanation. No automatic modal spam. */
+export function HelpTip({label,text}:{label:string;text:string}){
+  const [open,setOpen]=React.useState(false);
+  return <View style={{position:"relative",zIndex:open?50:1,alignSelf:"flex-start"}}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`What does ${label} do?`}
+      accessibilityHint="Shows a brief feature explanation"
+      onPress={(e)=>{e.stopPropagation?.();setOpen(v=>!v);}}
+      style={{width:27,height:27,backgroundColor:"#E8EFF8",borderRadius:14,
+        alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"#C8D8E9"}}>
+      <Text style={{fontSize:14,color:palette.navy,fontWeight:"900"}}>?</Text>
+    </Pressable>
+    {open?<View style={{position:"absolute",top:32,right:0,width:225,borderRadius:12,
+      padding:12,backgroundColor:palette.navy,shadowColor:"#000",shadowOpacity:.18,
+      shadowRadius:9,elevation:7,zIndex:60}}>
+      <Text style={{color:"#FFF",fontSize:12,lineHeight:18,fontWeight:"600"}}>{text}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close explanation"
+        onPress={(e)=>{e.stopPropagation?.();setOpen(false);}} style={{marginTop:8,alignSelf:"flex-end"}}>
+        <Text style={{color:"#FFBE90",fontSize:12,fontWeight:"900"}}>Got it</Text>
+      </Pressable>
+    </View>:null}
+  </View>;
+}
+export function Button({label,onPress,secondary=false,disabled=false,busy=false,help}:{label:string;onPress:()=>void;secondary?:boolean;disabled?:boolean;busy?:boolean;help?:string}){
+  const action=<Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled||busy} onPress={onPress}
     style={({pressed})=>({backgroundColor:disabled?"#C6CFD9":secondary?"#E9F1F9":palette.orange,paddingVertical:13,paddingHorizontal:19,borderRadius:12,opacity:pressed?.8:1,alignItems:"center",minHeight:45,justifyContent:"center"})}>
     {busy?<ActivityIndicator color={secondary?palette.ink:"#FFF"}/>:<Text style={{fontWeight:"800",fontSize:14,color:secondary?palette.navy:"#FFF"}}>{label}</Text>}
   </Pressable>;
+  return help?<View style={{flexDirection:"row",alignItems:"center",gap:7}}>{action}<HelpTip label={label} text={help}/></View>:action;
 }
 export function Field({label,value,onChangeText,placeholder,multiline=false,secure=false}:{label:string;value:string;onChangeText:(v:string)=>void;placeholder?:string;multiline?:boolean;secure?:boolean}){
   return <View style={{marginBottom:15}}>

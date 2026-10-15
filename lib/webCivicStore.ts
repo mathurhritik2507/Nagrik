@@ -8,7 +8,7 @@ import { CrateClaim, WEEKLY_GOAL, weekKeyFor, currentWeekProgress, chooseVirtual
 
 export type CivicAction = { id: string; createdAt: string; category: string; description: string; image?: string };
 export type CivicReport = { id: string; createdAt: string; category: string; location: string; description: string; image?: string; status: "Saved locally" };
-export type CivicProof = { id: string; createdAt: string; challengeId: string; description: string; image: string; status: "Unverified" };
+export type CivicProof = { id: string; createdAt: string; challengeId: string; description: string; image: string; status: "Unverified" | "AI-screened" };
 export type CivicProfile = { city: string; bio: string };
 export type CivicData = { actions: CivicAction[]; reports: CivicReport[]; proofs: CivicProof[]; profile: CivicProfile; crateClaims: CrateClaim[] };
 const EVENT = "nagrik-civic-updated";
@@ -73,14 +73,17 @@ export function useCivicData() {
       ...state, reports: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Saved locally" as const }, ...state.reports].slice(0, 35),
     }));
   };
-  const addProof = (item: Pick<CivicProof, "challengeId" | "description" | "image">) => {
+  const addProof = (item: Pick<CivicProof, "challengeId" | "description" | "image"> & {status?:CivicProof["status"]}) => {
     if (!item.image || item.description.trim().length < 12) throw new Error("Add a photo and describe your action in at least 12 characters.");
     updateCivic(uid, state => {
       if(currentWeekProgress(state.proofs).has(item.challengeId)){
         throw new Error("You already submitted proof for that mission this week. Try a different mission.");
       }
+      if(state.proofs.some(p=>p.image===item.image)){
+        throw new Error("You already used this exact image as challenge evidence. Please choose a new photo.");
+      }
       return {
-        ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: "Unverified" as const }, ...state.proofs].slice(0, 60),
+        ...state, proofs: [{ ...item, id: makeId(), createdAt: new Date().toISOString(), status: item.status==="AI-screened"?"AI-screened" as const:"Unverified" as const }, ...state.proofs].slice(0, 60),
       };
     });
   };
