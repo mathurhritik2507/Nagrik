@@ -171,8 +171,9 @@ export default function ChallengesScreen() {
         icon: selectedChallenge.icon,
         description: proofText.trim(),
         image: proofImage,
-        xp: selectedChallenge.xp,
-        status: "Pending AI Review",
+        xp: 0,
+        potentialXp: selectedChallenge.xp,
+        status: "Unverified",
         createdAt: new Date().toISOString(),
       };
 
@@ -194,11 +195,11 @@ export default function ChallengesScreen() {
         name: user.displayName || "Nagrik User",
         email: user.email || "",
         city: "Pune",
-        category: "Challenge Completed",
+        category: "Challenge Submitted",
         caption: `${selectedChallenge.icon} ${selectedChallenge.title}: ${proofText.trim()}`,
-        xp: selectedChallenge.xp,
+        xp: 0,
         image: proofImage,
-        verified: true,
+        verified: false,
         createdAt: new Date().toISOString(),
       };
 
@@ -209,7 +210,7 @@ export default function ChallengesScreen() {
 
       Alert.alert(
         "Proof Submitted ✅",
-        "Your challenge proof is submitted for AI review. XP added to your profile."
+        "Your photo was saved on this device only. No AI review occurred and no XP was awarded."
       );
 
       setSelectedChallenge(null);
@@ -227,7 +228,6 @@ export default function ChallengesScreen() {
     return submissions.some((item) => item.challengeId === challengeId);
   };
 
-  const streak = Math.min(30, submissions.length + 3);
   const completedCount = submissions.length;
 
   return (
@@ -254,7 +254,7 @@ export default function ChallengesScreen() {
             </Text>
 
             <Text style={{ color: "#fff", marginTop: 10, fontSize: 16 }}>
-              Complete real tasks with photo proof. No fake completion.
+              Record photo evidence honestly. This beta cannot verify actions automatically.
             </Text>
           </View>
 
@@ -267,7 +267,7 @@ export default function ChallengesScreen() {
             }}
           >
             <Text style={{ fontSize: 26, fontWeight: "900", color: colors.text }}>
-              Civic Streak 🔥
+              Local challenge submissions
             </Text>
 
             <Text
@@ -278,11 +278,11 @@ export default function ChallengesScreen() {
                 marginTop: 14,
               }}
             >
-              {streak} Days
+              {completedCount}
             </Text>
 
             <Text style={{ color: colors.muted, marginTop: 8, lineHeight: 22 }}>
-              Streak grows when you submit real challenge proof.
+              Evidence saved on this device; not independently verified.
             </Text>
 
             <View
@@ -296,7 +296,7 @@ export default function ChallengesScreen() {
             >
               <View
                 style={{
-                  width: `${Math.min(100, streak * 10)}%`,
+                  width: `${Math.min(100, completedCount * 10)}%`,
                   height: "100%",
                   backgroundColor: colors.primary,
                 }}
@@ -304,7 +304,7 @@ export default function ChallengesScreen() {
             </View>
 
             <Text style={{ color: colors.warning, fontWeight: "900", marginTop: 12 }}>
-              {completedCount} verified challenge submissions
+              {completedCount} unverified challenge submissions
             </Text>
           </View>
 
@@ -341,7 +341,7 @@ export default function ChallengesScreen() {
                   marginTop: 8,
                 }}
               >
-                {selectedChallenge.title} · +{selectedChallenge.xp} XP
+                {selectedChallenge.title} · Potential {selectedChallenge.xp} XP after verification
               </Text>
 
               <Text style={{ color: colors.muted, marginTop: 10, lineHeight: 22 }}>
@@ -423,7 +423,7 @@ export default function ChallengesScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={{ color: "#fff", fontSize: 17, fontWeight: "900" }}>
-                    Submit Proof for Review
+                    Save Unverified Proof
                   </Text>
                 )}
               </TouchableOpacity>
@@ -507,7 +507,7 @@ export default function ChallengesScreen() {
                   }}
                 >
                   <Text style={{ color: colors.success, fontWeight: "900" }}>
-                    +{item.xp} XP
+                    Potential {item.xp} XP (not awarded)
                   </Text>
 
                   <TouchableOpacity
